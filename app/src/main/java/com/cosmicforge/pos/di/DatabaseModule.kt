@@ -74,4 +74,9 @@ object DatabaseModule {
     fun provideSecurityAuditDao(database: CosmicForgeDatabase): SecurityAuditDao {
         return database.securityAuditDao()
     }
+    
+    @Provides
+    fun provideSMSTemplateDao(database: CosmicForgeDatabase): SMSTemplateDao {
+        return database.smsTemplateDao()
+    }
 }
