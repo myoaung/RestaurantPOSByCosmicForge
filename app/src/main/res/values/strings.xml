@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Cosmic Forge POS</string>
+    
+    <!-- Common -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+    <string name="back">Back</string>
+    <string name="next">Next</string>
+    <string name="done">Done</string>
+    
+    <!-- Login -->
+    <string name="enter_pin">Enter PIN</string>
+    <string name="login">Login</string>
+    <string name="select_role">Select Role</string>
+    
+    <!-- Roles -->
+    <string name="role_owner">Owner</string>
+    <string name="role_manager">Manager</string>
+    <string name="role_waiter">Waiter</string>
+    <string name="role_chief">Chief</string>
+    
+    <!-- Table Status -->
+    <string name="status_free">Free</string>
+    <string name="status_in_use">In Use</string>
+    <string name="status_dirty">Dirty</string>
+    <string name="status_reserved">Reserved</string>
+    
+    <!-- Order -->
+    <string name="order_type_dine_in">Dine In</string>
+    <string name="order_type_parcel">Parcel</string>
+    <string name="add_to_cart">Add to Cart</string>
+    <string name="checkout">Checkout</string>
+    
+    <!-- Payment -->
+    <string name="payment_cash">Cash</string>
+    <string name="payment_kpay">KPay</string>
+    <string name="payment_cbpay">CB Pay</string>
+    
+    <!-- KDS -->
+    <string name="claim_order">Claim</string>
+    <string name="mark_ready">Mark Ready</string>
+    <string name="pending">Pending</string>
+    <string name="cooking">Cooking</string>
+    <string name="ready">Ready</string>
+</resources>

@@ -1,0 +1,56 @@
+# Gradle files
+.gradle/
+build/
+local.properties
+*.iml
+.idea/
+*.log
+
+# Android Studio
+captures/
+.externalNativeBuild
+.cxx
+
+# Keystore files
+*.jks
+*.keystore
+
+# Google Services
+google-services.json
+
+# IntelliJ
+*.iml
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/gradle.xml
+.idea/assetWizardSettings.xml
+.idea/dictionaries
+.idea/libraries
+.idea/caches
+
+# Android
+*.apk
+*.aab
+*.dex
+*.class
+bin/
+gen/
+out/
+
+# Local configuration file
+local.properties
+
+# Log Files
+*.log
+
+# Android Profiling
+*.hprof
+
+# Temporary files
+*.swp
+*.tmp
+*~
+
+# OS specific
+.DS_Store
+Thumbs.db
