@@ -94,6 +94,43 @@ class OrderRepository @Inject constructor(
         }
     }
     
+    /**
+     * Claim order detail (chief accountability)
+     */
+    suspend fun claimOrderDetail(
+        detailId: Long,
+        chiefId: Long,
+        chiefName: String,
+        claimTime: Long
+    ) {
+        orderDetailDao.updateClaimInfo(detailId, chiefId, chiefName, claimTime)
+        
+        // Update status to COOKING
+        orderDetailDao.updateDetailStatus(detailId, "COOKING")
+    }
+    
+    /**
+     * Mark detail as ready
+     */
+    suspend fun markDetailReady(detailId: Long, readyTime: Long) {
+        orderDetailDao.updateReadyTime(detailId, readyTime)
+        orderDetailDao.updateDetailStatus(detailId, "READY")
+    }
+    
+    /**
+     * Get order detail by ID
+     */
+    suspend fun getOrderDetailById(detailId: Long): OrderDetailEntity? {
+        return orderDetailDao.getDetailById(detailId)
+    }
+    
+    /**
+     * Get order details snapshot
+     */
+    suspend fun getOrderDetailsSnapshot(orderId: Long): List<OrderDetailEntity> {
+        return orderDetailDao.getDetailsByOrderSnapshot(orderId)
+    }
+    
     companion object {
         private const val PARCEL_PACKAGING_FEE = 1000.0 // MMK
     }

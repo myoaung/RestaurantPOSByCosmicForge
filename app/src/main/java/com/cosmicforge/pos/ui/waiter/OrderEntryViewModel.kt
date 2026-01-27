@@ -61,17 +61,23 @@ class OrderEntryViewModel @Inject constructor(
     
     val orderSummary: StateFlow<OrderSummary> = combine(
         _orderItems,
-        _isParcelOrder
-    ) { items, isParcel ->
+        _isParcelOrder,
+        _customParcelFee
+    ) { items, isParcel, customFee ->
         val subtotal = items.sumOf { it.totalPrice }
-        val parcelFee = if (isParcel) PARCEL_FEE else 0.0
+        val parcelFee = if (isParcel) {
+            customFee ?: PARCEL_FEE // Use custom or default
+        } else {
+            0.0
+        }
         val total = subtotal + parcelFee
         
         OrderSummary(
             subtotal = subtotal,
             parcelFee = parcelFee,
             total = total,
-            itemCount = items.sumOf { it.quantity }
+            itemCount = items.sumOf { it.quantity },
+            isCustomParcelFee = customFee != null && isParcel
         )
     }.stateIn(
         scope = viewModelScope,
@@ -97,6 +103,17 @@ class OrderEntryViewModel @Inject constructor(
             _selectedTable.value = null // Parcel orders don't need tables
         }
     }
+    
+    /**
+     * Set custom parcel fee (manual override)
+     * Defaults to PARCEL_FEE if not set
+     */
+    fun setCustomParcelFee(customFee: Double?) {
+        _customParcelFee.value = customFee
+    }
+    
+    private val _customParcelFee = MutableStateFlow<Double?>(null)
+    val customParcelFee: StateFlow<Double?> = _customParcelFee.asStateFlow()
     
     /**
      * Select category
@@ -182,6 +199,8 @@ class OrderEntryViewModel @Inject constructor(
                     waiterId = waiterId,
                     subtotal = summary.subtotal,
                     parcelFee = summary.parcelFee,
+                    customParcelFee = _customParcelFee.value,
+                    parcelFeeOverrideBy = if (_customParcelFee.value != null) waiterName else null,
                     totalAmount = summary.total,
                     status = "PENDING",
                     syncId = UUID.randomUUID().toString(),
@@ -251,5 +270,6 @@ data class OrderSummary(
     val subtotal: Double = 0.0,
     val parcelFee: Double = 0.0,
     val total: Double = 0.0,
-    val itemCount: Int = 0
+    val itemCount: Int = 0,
+    val isCustomParcelFee: Boolean = false
 )
