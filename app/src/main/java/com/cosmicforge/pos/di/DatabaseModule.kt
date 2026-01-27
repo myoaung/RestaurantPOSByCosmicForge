@@ -69,4 +69,9 @@ object DatabaseModule {
     fun provideOrderDetailDao(database: CosmicForgeDatabase): OrderDetailDao {
         return database.orderDetailDao()
     }
+    
+    @Provides
+    fun provideSecurityAuditDao(database: CosmicForgeDatabase): SecurityAuditDao {
+        return database.securityAuditDao()
+    }
 }
