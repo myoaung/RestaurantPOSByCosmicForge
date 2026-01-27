@@ -18,9 +18,10 @@ import com.cosmicforge.pos.data.database.entities.*
         MenuItemEntity::class,
         OrderEntity::class,
         OrderDetailEntity::class,
-        SecurityAuditEntity::class
+        SecurityAuditEntity::class,
+        SMSTemplateEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 @TypeConverters(DatabaseConverters::class)
@@ -33,6 +34,7 @@ abstract class CosmicForgeDatabase : RoomDatabase() {
     abstract fun orderDao(): OrderDao
     abstract fun orderDetailDao(): OrderDetailDao
     abstract fun securityAuditDao(): SecurityAuditDao
+    abstract fun smsTemplateDao(): SMSTemplateDao
     
     companion object {
         const val DATABASE_NAME = "cosmic_forge_db"

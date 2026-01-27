@@ -9,27 +9,32 @@ import javax.inject.Singleton
  * SMS Manager with Myanmar Unicode support
  */
 @Singleton
-class SMSManager @Inject constructor() {
+class SMSManager @Inject constructor(
+    private val templateRepository: SMSTemplateRepository
+) {
     
     /**
      * Send reservation confirmation SMS
      */
-    fun sendReservationSMS(
+    suspend fun sendReservationSMS(
         phoneNumber: String,
+        shopName: String,
         customerName: String,
         tableNumber: String,
         dateTime: String
     ): SMSResult {
-        val message = buildString {
-            appendLine("🍽️ Cosmic Forge POS")
-            appendLine()
-            appendLine("ကြိုဆိုပါတယ် $customerName!")
-            appendLine()
-            appendLine("စားပွဲနံပါတ်: $tableNumber")
-            appendLine("ရက်စွဲ: $dateTime")
-            appendLine()
-            appendLine("ကျေးဇူးတင်ပါတယ်။")
-        }
+        val template = templateRepository.getTemplate(SMSTemplateEntity.TYPE_RESERVATION)
+            ?: return SMSResult.Failure("Template not found")
+        
+        val message = templateRepository.replaceVariables(
+            template.templateText,
+            mapOf(
+                "{shop_name}" to shopName,
+                "{customer_name}" to customerName,
+                "{table}" to tableNumber,
+                "{date_time}" to dateTime
+            )
+        )
         
         return sendSMS(phoneNumber, message)
     }
@@ -37,24 +42,25 @@ class SMSManager @Inject constructor() {
     /**
      * Send thank you SMS after order
      */
-    fun sendThankYouSMS(
+    suspend fun sendThankYouSMS(
         phoneNumber: String,
+        shopName: String,
         customerName: String,
         orderNumber: String,
         totalAmount: Double
     ): SMSResult {
-        val message = buildString {
-            appendLine("🙏 ကျေးဇူးတင်ပါတယ်!")
-            appendLine()
-            appendLine("$customerName")
-            appendLine()
-            appendLine("အော်ဒါနံပါတ်: $orderNumber")
-            appendLine("စုစုပေါင်း: ${totalAmount.toInt()} ကျပ်")
-            appendLine()
-            appendLine("နောက်တစ်ကြိမ် ထပ်လာရောက်ပါနော်။")
-            appendLine()
-            appendLine("Cosmic Forge POS")
-        }
+        val template = templateRepository.getTemplate(SMSTemplateEntity.TYPE_THANK_YOU)
+            ?: return SMSResult.Failure("Template not found")
+        
+        val message = templateRepository.replaceVariables(
+            template.templateText,
+            mapOf(
+                "{shop_name}" to shopName,
+                "{customer_name}" to customerName,
+                "{order_number}" to orderNumber,
+                "{total}" to totalAmount.toInt().toString()
+            )
+        )
         
         return sendSMS(phoneNumber, message)
     }
@@ -62,21 +68,23 @@ class SMSManager @Inject constructor() {
     /**
      * Send order ready notification
      */
-    fun sendOrderReadySMS(
+    suspend fun sendOrderReadySMS(
         phoneNumber: String,
+        shopName: String,
         customerName: String,
         orderNumber: String
     ): SMSResult {
-        val message = buildString {
-            appendLine("✅ အော်ဒါအဆင်သင့်ဖြစ်ပါပြီ")
-            appendLine()
-            appendLine("$customerName")
-            appendLine("အော်ဒါ: $orderNumber")
-            appendLine()
-            appendLine("လာယူနိုင်ပါပြီခင်ဗျာ။")
-            appendLine()
-            appendLine("Cosmic Forge POS")
-        }
+        val template = templateRepository.getTemplate(SMSTemplateEntity.TYPE_ORDER_READY)
+            ?: return SMSResult.Failure("Template not found")
+        
+        val message = templateRepository.replaceVariables(
+            template.templateText,
+            mapOf(
+                "{shop_name}" to shopName,
+                "{customer_name}" to customerName,
+                "{order_number}" to orderNumber
+            )
+        )
         
         return sendSMS(phoneNumber, message)
     }
