@@ -42,4 +42,12 @@ object RepositoryModule {
     ): OrderRepository {
         return OrderRepository(orderDao, orderDetailDao, syncEngine)
     }
+    
+    @Provides
+    @Singleton
+    fun provideSMSTemplateRepository(
+        smsTemplateDao: SMSTemplateDao
+    ): SMSTemplateRepository {
+        return SMSTemplateRepository(smsTemplateDao)
+    }
 }
