@@ -59,6 +59,9 @@ class OrderEntryViewModel @Inject constructor(
             initialValue = emptyList()
         )
     
+    private val _customParcelFee = MutableStateFlow<Double?>(null)
+    val customParcelFee: StateFlow<Double?> = _customParcelFee.asStateFlow()
+    
     val orderSummary: StateFlow<OrderSummary> = combine(
         _orderItems,
         _isParcelOrder,
@@ -111,9 +114,6 @@ class OrderEntryViewModel @Inject constructor(
     fun setCustomParcelFee(customFee: Double?) {
         _customParcelFee.value = customFee
     }
-    
-    private val _customParcelFee = MutableStateFlow<Double?>(null)
-    val customParcelFee: StateFlow<Double?> = _customParcelFee.asStateFlow()
     
     /**
      * Select category

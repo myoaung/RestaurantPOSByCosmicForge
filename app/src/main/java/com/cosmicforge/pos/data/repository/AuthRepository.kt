@@ -2,6 +2,7 @@ package com.cosmicforge.pos.data.repository
 
 import com.cosmicforge.pos.core.security.*
 import com.cosmicforge.pos.data.database.dao.UserDao
+import com.cosmicforge.pos.data.database.entities.SecurityAuditEntity
 import com.cosmicforge.pos.data.database.entities.UserEntity
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject

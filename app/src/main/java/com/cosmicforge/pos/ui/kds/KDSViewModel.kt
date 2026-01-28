@@ -94,12 +94,15 @@ class KDSViewModel @Inject constructor(
                 claimTime = currentTime
             )
             
-            // Log claim action
-            auditLogger.logChiefClaim(
-                chiefId = chiefId,
-                chiefName = chiefName,
-                orderId = orderId,
-                detailId = detailId
+            // Log claim action (using generic logAction)
+            auditLogger.logAction(
+                actionType = "CHIEF_CLAIM",
+                userId = chiefId,
+                userName = chiefName,
+                roleLevel = 2, // Chief role level
+                targetType = "ORDER_DETAIL",
+                targetId = detailId.toString(),
+                actionDetails = "Claimed order detail for cooking"
             )
         }
     }
@@ -119,8 +122,8 @@ class KDSViewModel @Inject constructor(
             // Get the detail to calculate cook time
             val detail = orderRepository.getOrderDetailById(detailId)
             detail?.let {
-                val cookTime = if (it.claimedAtTimestamp != null) {
-                    readyTime - it.claimedAtTimestamp
+                val cookTimeSeconds = if (it.claimedAtTimestamp != null) {
+                    (readyTime - it.claimedAtTimestamp) / 1000
                 } else {
                     0L
                 }
@@ -133,7 +136,8 @@ class KDSViewModel @Inject constructor(
                     chiefId = chiefId,
                     chiefName = chiefName,
                     detailId = detailId,
-                    cookTimeMs = cookTime
+                    itemName = it.itemName,
+                    prepTimeSeconds = cookTimeSeconds
                 )
             }
         }

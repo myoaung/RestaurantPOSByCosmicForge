@@ -48,7 +48,7 @@ object NetworkModule {
     fun provideSocketManager(
         gson: Gson
     ): SocketManager {
-        return Socket Manager(gson)
+        return SocketManager(gson)
     }
     
     @Provides
@@ -76,7 +76,7 @@ object NetworkModule {
         tableDao: com.cosmicforge.pos.data.database.dao.TableDao,
         gson: Gson
     ): SyncEngine {
-        return SyncEngine (
+        return SyncEngine(
             meshNetwork = meshNetwork,
             orderDao = orderDao,
             orderDetailDao = orderDetailDao,
