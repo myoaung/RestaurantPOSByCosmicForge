@@ -87,7 +87,7 @@ class SyncForegroundService : Service() {
             .build()
     }
     
-    private fun getForegroundServiceType(): Int {
+    override fun getForegroundServiceType(): Int {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
         } else {

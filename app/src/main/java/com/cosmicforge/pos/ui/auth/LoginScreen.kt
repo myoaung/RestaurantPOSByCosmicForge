@@ -18,6 +18,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cosmicforge.pos.data.database.entities.UserEntity
+import kotlinx.coroutines.Dispatchers
 
 /**
  * Login screen with user selection and PIN entry
