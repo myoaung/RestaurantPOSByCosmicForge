@@ -10,11 +10,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.compose.rememberNavController
+import com.cosmicforge.pos.ui.navigation.NavGraph
 import com.cosmicforge.pos.ui.theme.CosmicForgeTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
- * Main Activity for Cosmic Forge POS
+ * Main Activity for Cosmic Forge POS - Phase 2 Transition
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -22,20 +24,26 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             CosmicForgeTheme {
+                // Initialize the NavController to manage screen transitions
+                val navController = rememberNavController()
+                
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // Placeholder for Phase 1
-                    WelcomeScreen()
+                    // NavGraph now controls which screen is shown
+                    NavGraph(navController = navController)
                 }
             }
         }
     }
 }
 
+/**
+ * Updated WelcomeScreen with Navigation trigger
+ */
 @Composable
-fun WelcomeScreen() {
+fun WelcomeScreen(onNavigateToLogin: () -> Unit) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -57,6 +65,16 @@ fun WelcomeScreen() {
                 text = "✓ Database Schema Ready\n✓ Hilt DI Configured\n✓ SQLCipher Encryption Enabled",
                 style = MaterialTheme.typography.bodyLarge
             )
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // NEW: Button to move to Phase 2 (Login)
+            Button(
+                onClick = onNavigateToLogin,
+                modifier = Modifier.fillMaxWidth(0.6f)
+            ) {
+                Text("Get Started")
+            }
         }
     }
 }
