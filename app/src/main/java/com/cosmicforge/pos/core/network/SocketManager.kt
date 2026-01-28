@@ -105,7 +105,7 @@ class SocketManager @Inject constructor(
                 }
                 
                 Log.d(TAG, "Connecting to ${peer.deviceName} at $host:$port")
-                val socket = Socket(host, port)
+                val socket = java.net.Socket(host, port)
                 clientSockets[peer.deviceId] = socket
                 
                 withContext(Dispatchers.Main) {

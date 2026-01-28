@@ -23,8 +23,14 @@ data class OrderDetailEntity(
     @ColumnInfo(name = "item_name")
     val itemName: String, // Cached for display
     
+    @ColumnInfo(name = "item_name_mm")
+    val itemNameMm: String? = null, // Myanmar language name (cached for offline resilience)
+    
     @ColumnInfo(name = "quantity")
     val quantity: Int,
+    
+    @ColumnInfo(name = "price")
+    val price: Double, // Price at time of order (historical snapshot)
     
     @ColumnInfo(name = "unit_price")
     val unitPrice: Double,

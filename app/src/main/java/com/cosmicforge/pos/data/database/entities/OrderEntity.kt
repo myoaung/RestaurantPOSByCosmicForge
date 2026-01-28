@@ -28,6 +28,9 @@ data class OrderEntity(
     @ColumnInfo(name = "customer_phone")
     val customerPhone: String? = null,
     
+    @ColumnInfo(name = "waiter_name")
+    val waiterName: String? = null, // Waiter who created the order (cached for historical accuracy)
+    
     @ColumnInfo(name = "waiter_id")
     val waiterId: Long,
     
@@ -54,6 +57,9 @@ data class OrderEntity(
     
     @ColumnInfo(name = "total")
     val total: Double = 0.0,
+    
+    @ColumnInfo(name = "total_amount")
+    val totalAmount: Double = 0.0, // Alias for total (for UI compatibility and historical snapshots)
     
     @ColumnInfo(name = "payment_method")
     val paymentMethod: String? = null, // CASH, KPAY, CBPAY

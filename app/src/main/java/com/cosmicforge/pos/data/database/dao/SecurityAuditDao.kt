@@ -32,6 +32,13 @@ interface SecurityAuditDao {
     
     @Query("""
         SELECT * FROM security_audit 
+        WHERE DATE(timestamp/1000, 'unixepoch', 'localtime') = DATE('now', 'localtime')
+        ORDER BY timestamp DESC
+    """)
+    suspend fun getTodayAuditsSnapshot(): List<SecurityAuditEntity>
+    
+    @Query("""
+        SELECT * FROM security_audit 
         WHERE action_type IN ('VOID_ITEM', 'VOID_ORDER', 'REFUND', 'MANAGER_OVERRIDE')
         ORDER BY timestamp DESC
     """)
