@@ -343,5 +343,5 @@ private fun getRoleColor(roleLevel: Int) = when (roleLevel) {
 }
 
 // Chef hat icon placeholder (Material Icons doesn't have this, using Kitchen instead)
-private val androidx.compose.material.icons.Icons.Default.ChefHat: androidx.compose.ui.graphics.vector.ImageVector
-    get() = androidx.compose.material.icons.Icons.Default.Kitchen
+private val Icons.Default.ChefHat
+    get() = Icons.Default.Kitchen
