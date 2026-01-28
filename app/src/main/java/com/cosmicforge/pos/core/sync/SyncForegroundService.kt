@@ -32,7 +32,12 @@ class SyncForegroundService : Service() {
         when (intent?.action) {
             ACTION_START_SYNC -> {
                 createNotificationChannel()
-                startForeground(NOTIFICATION_ID, createNotification(), getForegroundServiceType())
+                val serviceType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
+                } else {
+                    0
+                }
+                startForeground(NOTIFICATION_ID, createNotification(), serviceType)
                 syncEngine.initialize()
                 syncEngine.startSync()
             }
@@ -86,13 +91,6 @@ class SyncForegroundService : Service() {
             .setOngoing(true)
             .build()
     }
-    
-    override fun getForegroundServiceType(): Int {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
-        } else {
-            0
-        }
     }
     
     companion object {
