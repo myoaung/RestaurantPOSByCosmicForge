@@ -99,7 +99,8 @@ class SocketManager @Inject constructor(
                 // Parse host and port from address
                 val (host, port) = if (peer.deviceAddress.contains(":")) {
                     val parts = peer.deviceAddress.split(":")
-                    parts[0] to parts.getOrNull(1)?.toIntOrNull() ?: DEFAULT_PORT
+                    val portValue = parts.getOrNull(1)?.toIntOrNull() ?: DEFAULT_PORT
+                    parts[0] to portValue
                 } else {
                     peer.deviceAddress to DEFAULT_PORT
                 }

@@ -9,6 +9,9 @@ interface OrderDetailDao {
     @Query("SELECT * FROM order_details WHERE order_id = :orderId AND is_void = 0 ORDER BY detail_id")
     fun getDetailsForOrder(orderId: Long): Flow<List<OrderDetailEntity>>
     
+    @Query("SELECT * FROM order_details WHERE order_id = :orderId AND is_void = 0 ORDER BY detail_id")
+    suspend fun getDetailsByOrderSnapshot(orderId: Long): List<OrderDetailEntity>
+    
     @Query("SELECT * FROM order_details WHERE detail_id = :detailId")
     suspend fun getDetailById(detailId: Long): OrderDetailEntity?
     
@@ -64,6 +67,9 @@ interface OrderDetailDao {
         chiefName: String, 
         claimTime: Long
     )
+    
+    @Query("UPDATE order_details SET end_time = :readyTime, updated_at = :readyTime WHERE detail_id = :detailId")
+    suspend fun updateReadyTime(detailId: Long, readyTime: Long)
     
     @Query("UPDATE order_details SET is_void = 1, void_by = :managerId, void_reason = :reason WHERE detail_id = :detailId")
     suspend fun voidDetail(detailId: Long, managerId: Long, reason: String)

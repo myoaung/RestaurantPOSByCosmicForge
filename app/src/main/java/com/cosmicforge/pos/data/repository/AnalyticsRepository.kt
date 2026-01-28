@@ -116,12 +116,12 @@ class AnalyticsRepository @Inject constructor(
                 val chiefName = audits.firstOrNull()?.userName ?: "Unknown"
                 val completedDishes = audits.size
                 
-                // Extract cook times from reason field
+                // Extract cook times from actionDetails field
                 val cookTimes = audits.mapNotNull { audit ->
-                    audit.reason?.let { reason ->
-                        // Parse "Completed in X.X minutes"
-                        val match = Regex("""(\d+\.?\d*) minutes""").find(reason)
-                        match?.groupValues?.get(1)?.toDoubleOrNull()
+                    audit.actionDetails?.let { details ->
+                        // Parse "Item: X, Prep Time: Ys" format
+                        val match = Regex("""Prep Time: (\d+)s""").find(details)
+                        match?.groupValues?.get(1)?.toDoubleOrNull()?.div(60.0) // Convert to minutes
                     }
                 }
                 

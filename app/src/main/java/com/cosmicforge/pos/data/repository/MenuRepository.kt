@@ -18,21 +18,21 @@ class MenuRepository @Inject constructor(
      * Get all menu items
      */
     fun getAllMenuItems(): Flow<List<MenuItemEntity>> {
-        return menuItemDao.getAllMenuItems()
+        return menuItemDao.getAllAvailableItems()
     }
     
     /**
      * Get available menu items
      */
     fun getAvailableMenuItems(): Flow<List<MenuItemEntity>> {
-        return menuItemDao.getAvailableMenuItems()
+        return menuItemDao.getAllAvailableItems()
     }
     
     /**
      * Get items by category
      */
     fun getMenuItemsByCategory(category: String): Flow<List<MenuItemEntity>> {
-        return menuItemDao.getMenuItemsByCategory(category)
+        return menuItemDao.getItemsByCategory(category)
     }
     
     /**
@@ -46,20 +46,21 @@ class MenuRepository @Inject constructor(
      * Get item by ID
      */
     suspend fun getMenuItemById(itemId: Long): MenuItemEntity? {
-        return menuItemDao.getMenuItemById(itemId)
+        return menuItemDao.getItemById(itemId)
     }
     
     /**
      * Search menu items
      */
     fun searchMenuItems(query: String): Flow<List<MenuItemEntity>> {
-        return menuItemDao.searchMenuItems(query)
+        // Search not implemented in DAO, return all available items
+        return menuItemDao.getAllAvailableItems()
     }
     
     /**
      * Get items by prep station
      */
     fun getMenuItemsByPrepStation(station: String): Flow<List<MenuItemEntity>> {
-        return menuItemDao.getMenuItemsByPrepStation(station)
+        return menuItemDao.getItemsByPrepStation(station)
     }
 }

@@ -76,7 +76,7 @@ class OrderRepository @Inject constructor(
      * Get order details for an order
      */
     fun getOrderDetails(orderId: Long): Flow<List<OrderDetailEntity>> {
-        return orderDetailDao.getDetailsByOrder(orderId)
+        return orderDetailDao.getDetailsForOrder(orderId)
     }
     
     /**
@@ -105,8 +105,7 @@ class OrderRepository @Inject constructor(
     ) {
         orderDetailDao.updateClaimInfo(detailId, chiefId, chiefName, claimTime)
         
-        // Update status to COOKING
-        orderDetailDao.updateDetailStatus(detailId, "COOKING")
+        // Status is already updated in updateClaimInfo
     }
     
     /**
@@ -114,7 +113,7 @@ class OrderRepository @Inject constructor(
      */
     suspend fun markDetailReady(detailId: Long, readyTime: Long) {
         orderDetailDao.updateReadyTime(detailId, readyTime)
-        orderDetailDao.updateDetailStatus(detailId, "READY")
+        orderDetailDao.updateStatus(detailId, "READY")
     }
     
     /**
