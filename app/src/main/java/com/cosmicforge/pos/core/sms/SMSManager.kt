@@ -2,6 +2,8 @@ package com.cosmicforge.pos.core.sms
 
 import android.telephony.SmsManager
 import android.util.Log
+import com.cosmicforge.pos.data.database.entities.SMSTemplateEntity
+import com.cosmicforge.pos.data.repository.SMSTemplateRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 
