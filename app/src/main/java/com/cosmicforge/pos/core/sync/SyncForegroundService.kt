@@ -12,9 +12,6 @@ import com.cosmicforge.pos.R
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
-/**
- * Foreground service to keep P2P sync running in background
- */
 @AndroidEntryPoint
 class SyncForegroundService : Service() {
     
@@ -90,7 +87,6 @@ class SyncForegroundService : Service() {
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .build()
-    }
     }
     
     companion object {
