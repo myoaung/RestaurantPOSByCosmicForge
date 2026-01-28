@@ -8,7 +8,13 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Circle
+import androidx.compose.material.icons.filled.Kitchen
+import androidx.compose.material.icons.filled.ManageAccounts
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.SupervisorAccount
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -61,7 +67,6 @@ fun LoginScreen(
                 }
             }
             is LoginUiState.Error -> {
-                // Error will auto-clear to PIN entry
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -182,7 +187,6 @@ private fun PinEntryScreen(
             .padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Back button
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Start
@@ -224,7 +228,6 @@ private fun PinEntryScreen(
         
         Spacer(modifier = Modifier.height(24.dp))
         
-        // PIN display
         Row(
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
@@ -255,14 +258,13 @@ private fun PinEntryScreen(
         
         Spacer(modifier = Modifier.height(48.dp))
         
-        // Number pad
         PinPad(
             onNumberClick = { number ->
                 if (pin.length < 4) {
                     pin += number
                     if (pin.length == 4) {
                         onPinEntered(pin)
-                        pin = "" // Reset for next attempt
+                        pin = "" 
                     }
                 }
             },

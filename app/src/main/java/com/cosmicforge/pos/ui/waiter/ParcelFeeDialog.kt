@@ -1,5 +1,5 @@
 package com.cosmicforge.pos.ui.waiter
-
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons

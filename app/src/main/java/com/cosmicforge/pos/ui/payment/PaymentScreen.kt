@@ -1,5 +1,5 @@
 package com.cosmicforge.pos.ui.payment
-
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts

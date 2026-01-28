@@ -44,8 +44,11 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
+  kotlinOptions {
         jvmTarget = '17'
+        // This is the CRITICAL line to stop warnings from failing the build
+        allWarningsAsErrors = false 
+        freeCompilerArgs += ["-opt-in=androidx.compose.material3.ExperimentalMaterial3Api"]
     }
 
     buildFeatures {

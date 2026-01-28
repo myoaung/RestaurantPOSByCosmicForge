@@ -1,5 +1,5 @@
 package com.cosmicforge.pos.ui.waiter
-
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring

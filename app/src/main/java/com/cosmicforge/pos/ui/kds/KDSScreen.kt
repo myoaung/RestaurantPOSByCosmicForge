@@ -1,5 +1,5 @@
 package com.cosmicforge.pos.ui.kds
-
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
