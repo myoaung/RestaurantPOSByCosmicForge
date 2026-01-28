@@ -329,7 +329,7 @@ private fun getRoleIcon(roleLevel: Int) = when (roleLevel) {
     UserEntity.ROLE_OWNER -> Icons.Default.SupervisorAccount
     UserEntity.ROLE_MANAGER -> Icons.Default.ManageAccounts
     UserEntity.ROLE_WAITER -> Icons.Default.Restaurant
-    UserEntity.ROLE_CHIEF -> Icons.Default.ChefHat
+    UserEntity.ROLE_CHIEF -> Icons.Default.Kitchen
     else -> Icons.Default.Person
 }
 
@@ -341,7 +341,3 @@ private fun getRoleColor(roleLevel: Int) = when (roleLevel) {
     UserEntity.ROLE_CHIEF -> MaterialTheme.colorScheme.error
     else -> MaterialTheme.colorScheme.onSurface
 }
-
-// Chef hat icon placeholder (Material Icons doesn't have this, using Kitchen instead)
-private val Icons.Default.ChefHat
-    get() = Icons.Default.Kitchen
