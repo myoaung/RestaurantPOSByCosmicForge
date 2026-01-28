@@ -1,7 +1,6 @@
 package com.cosmicforge.pos.ui.waiter
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -16,196 +15,404 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cosmicforge.pos.data.database.entities.MenuItemEntity
-import com.cosmicforge.pos.data.database.entities.TableEntity
+import java.text.NumberFormat
+import java.util.Locale
 
 /**
- * Order entry screen with category-based menu and parcel toggle
+ * Order entry screen with two-pane layout
+ * Phase 4: Transaction Engine
+ * Left: Cart with totals | Right: Category-filtered menu grid
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderEntryScreen(
-    table: TableEntity?,
-    waiterName: String,
-    waiterId: Long,
-    onOrderSubmitted: () -> Unit,
-    onBack: () -> Unit,
-    viewModel: OrderEntryViewModel = hiltViewModel()
+    tableId: Long? = null,
+    tableName: String? = null,
+    onOrderFinalized: () -> Unit = {},
+    onBack: () -> Unit = {},
+    cartViewModel: CartViewModel = hiltViewModel(),
+    menuViewModel: OrderEntryViewModel = hiltViewModel()
 ) {
-    LaunchedEffect(table) {
-        table?.let { viewModel.setTable(it) }
-    }
+    val cartState by cartViewModel.cartState.collectAsState()
+    val categories by menuViewModel.categories.collectAsState()
+    val menuItems by menuViewModel.menuItems.collectAsState()
+    val selectedCategory by menuViewModel.selectedCategory.collectAsState()
     
-    val isParcelOrder by viewModel.isParcelOrder.collectAsState()
-    val selectedCategory by viewModel.selectedCategory.collectAsState()
-    val categories by viewModel.categories.collectAsState()
-    val menuItems by viewModel.menuItems.collectAsState()
-    val orderItems by viewModel.orderItems.collectAsState()
-    val orderSummary by viewModel.orderSummary.collectAsState()
-    
-    var showCheckoutDialog by remember { mutableStateOf(false) }
+    var showFinalizeDialog by remember { mutableStateOf(false) }
     
     Row(modifier = Modifier.fillMaxSize()) {
-        // Left: Menu selection
-        Column(
+        // LEFT PANE: Cart (40%)
+        CartPane(
+            cartState = cartState,
+            tableName = tableName,
+            onQuantityChange = { itemId, newQty ->
+                cartViewModel.updateQuantity(itemId, newQty)
+            },
+            onRemoveItem = { itemId ->
+                cartViewModel.removeItem(itemId)
+            },
+            onClearCart = {
+                cartViewModel.clearCart()
+            },
+            onFinalizeOrder = {
+                showFinalizeDialog = true
+            },
+            onBack = onBack,
             modifier = Modifier
-                .weight(2f)
+                .weight(0.4f)
                 .fillMaxHeight()
-                .background(MaterialTheme.colorScheme.background)
+        )
+        
+        Divider(modifier = Modifier.width(1.dp).fillMaxHeight())
+        
+        // RIGHT PANE: Menu Grid (60%)
+        MenuPane(
+            categories = categories,
+            selectedCategory = selectedCategory,
+            menuItems = menuItems,
+            onCategorySelected = { category ->
+                menuViewModel.selectCategory(category)
+            },
+            onItemSelected = { menuItem ->
+                cartViewModel.addItem(menuItem)
+            },
+            modifier = Modifier
+                .weight(0.6f)
+                .fillMaxHeight()
+        )
+    }
+    
+    // Finalize Order Dialog
+    if (showFinalizeDialog) {
+        FinalizeOrderDialog(
+            cartState = cartState,
+            tableName = tableName,
+            onDismiss = { showFinalizeDialog = false },
+            onConfirm = {
+                // TODO: Integrate with OrderRepository to save order
+                cartViewModel.clearCart()
+                showFinalizeDialog = false
+                onOrderFinalized()
+            }
+        )
+    }
+}
+
+@Composable
+private fun CartPane(
+    cartState: CartState,
+    tableName: String?,
+    onQuantityChange: (Long, Int) -> Unit,
+    onRemoveItem: (Long) -> Unit,
+    onClearCart: () -> Unit,
+    onFinalizeOrder: () -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.background(MaterialTheme.colorScheme.surface)
+    ) {
+        // Header
+        Surface(
+            color = MaterialTheme.colorScheme.primaryContainer,
+            tonalElevation = 2.dp
         ) {
-            // Header
-            OrderEntryHeader(
-                table = table,
-                isParcelOrder = isParcelOrder,
-                onParcelToggle = { viewModel.toggleParcelMode(it) },
-                onBack = onBack
-            )
-            
-            Divider()
-            
-            // Category filter
-            CategoryFilter(
-                categories = categories,
-                selectedCategory = selectedCategory,
-                onCategorySelected = { viewModel.selectCategory(it) }
-            )
-            
-            Divider()
-            
-            // Menu grid
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 140.dp),
-                contentPadding = PaddingValues(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                items(menuItems) { item ->
-                    MenuItemCard(
-                        item = item,
-                        onAddClick = { viewModel.addItem(item) }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, "Back")
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = "Cart",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                        tableName?.let {
+                            Text(
+                                text = it,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                }
+                
+                if (cartState.items.isNotEmpty()) {
+                    TextButton(onClick = onClearCart) {
+                        Icon(Icons.Default.Clear, "Clear", modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Clear")
+                    }
+                }
+            }
+        }
+        
+        Divider()
+        
+        // Cart Items List
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            if (cartState.items.isEmpty()) {
+                item {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                Icons.Default.ShoppingCart,
+                                contentDescription = null,
+                                modifier = Modifier.size(64.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                "Cart is empty",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            } else {
+                items(cartState.items) { cartItem ->
+                    CartItemCard(
+                        cartItem = cartItem,
+                        onQuantityChange = onQuantityChange,
+                        onRemove = onRemoveItem
                     )
                 }
             }
         }
         
-        Divider(modifier = Modifier.width(1.dp).fillMaxHeight())
+        Divider()
         
-        // Right: Order cart
-        OrderCart(
-            orderItems = orderItems,
-            orderSummary = orderSummary,
-            isParcelOrder = isParcelOrder,
-            onQuantityChange = { itemId, qty -> viewModel.updateItemQuantity(itemId, qty) },
-            onRemoveItem = { viewModel.removeItem(it) },
-            onCheckout = { showCheckoutDialog = true }
-        )
-    }
-    
-    // Checkout dialog
-    if (showCheckoutDialog) {
-        CheckoutDialog(
-            orderSummary = orderSummary,
-            isParcelOrder = isParcelOrder,
-            onDismiss = { showCheckoutDialog = false },
-            onConfirm = { customerName ->
-                viewModel.submitOrder(
-                    waiterName = waiterName,
-                    waiterId = waiterId,
-                    customerName = customerName
-                ) {
-                    showCheckoutDialog = false
-                    onOrderSubmitted()
-                }
+        // Totals Summary
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Subtotal:", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    formatCurrency(cartState.subtotal),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium
+                )
             }
-        )
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text("Tax:", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    formatCurrency(cartState.tax),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
+            
+            Divider(modifier = Modifier.padding(vertical = 4.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    "Grand Total:",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    formatCurrency(cartState.grandTotal),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Button(
+                onClick = onFinalizeOrder,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                enabled = cartState.items.isNotEmpty()
+            ) {
+                Icon(Icons.Default.CheckCircle, "Finalize")
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Finalize Order", style = MaterialTheme.typography.titleMedium)
+            }
+        }
     }
 }
 
 @Composable
-private fun OrderEntryHeader(
-    table: TableEntity?,
-    isParcelOrder: Boolean,
-    onParcelToggle: (Boolean) -> Unit,
-    onBack: () -> Unit
+private fun CartItemCard(
+    cartItem: CartItem,
+    onQuantityChange: (Long, Int) -> Unit,
+    onRemove: (Long) -> Unit
 ) {
-    Surface(
+    Card(
         modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 4.dp
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.Default.ArrowBack, "Back")
-                }
-                
-                Spacer(modifier = Modifier.width(8.dp))
-                
+            Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = if (isParcelOrder) "Parcel Order" else table?.tableName ?: "New Order",
-                    style = MaterialTheme.typography.headlineSmall,
+                    text = cartItem.menuItem.itemName,
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "${formatCurrency(cartItem.menuItem.price)} × ${cartItem.quantity}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "Tax: ${(cartItem.menuItem.taxRate * 100).toInt()}%",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.secondary
                 )
             }
             
-            // Parcel toggle
             Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.ShoppingBag,
-                    contentDescription = "Parcel",
-                    tint = if (isParcelOrder) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Switch(
-                    checked = isParcelOrder,
-                    onCheckedChange = onParcelToggle,
-                    enabled = table == null
-                )
+                IconButton(
+                    onClick = { onQuantityChange(cartItem.menuItem.itemId, cartItem.quantity - 1) },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(Icons.Default.Remove, "Decrease", modifier = Modifier.size(18.dp))
+                }
+                
                 Text(
-                    text = "Parcel (+1000 MMK)",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = if (isParcelOrder) FontWeight.Bold else FontWeight.Normal
+                    text = cartItem.quantity.toString(),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.width(32.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
+                
+                IconButton(
+                    onClick = { onQuantityChange(cartItem.menuItem.itemId, cartItem.quantity + 1) },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(Icons.Default.Add, "Increase", modifier = Modifier.size(18.dp))
+                }
+                
+                IconButton(
+                    onClick = { onRemove(cartItem.menuItem.itemId) },
+                    colors = IconButtonDefaults.iconButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    ),
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(Icons.Default.Delete, "Remove", modifier = Modifier.size(18.dp))
+                }
             }
         }
     }
 }
 
 @Composable
-private fun CategoryFilter(
+private fun MenuPane(
     categories: List<String>,
     selectedCategory: String?,
-    onCategorySelected: (String?) -> Unit
+    menuItems: List<MenuItemEntity>,
+    onCategorySelected: (String?) -> Unit,
+    onItemSelected: (MenuItemEntity) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    Column(
+        modifier = modifier.background(MaterialTheme.colorScheme.background)
     ) {
-        item {
-            FilterChip(
-                selected = selectedCategory == null,
-                onClick = { onCategorySelected(null) },
-                label = { Text("All") }
-            )
+        // Header
+        Surface(
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 2.dp
+        ) {
+            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                Text(
+                    text = "Menu",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
         
-        items(categories) { category ->
-            FilterChip(
-                selected = selectedCategory == category,
-                onClick = { onCategorySelected(category) },
-                label = { Text(category) }
-            )
+        Divider()
+        
+        // Category Filter
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            item {
+                FilterChip(
+                    selected = selectedCategory == null,
+                    onClick = { onCategorySelected(null) },
+                    label = { Text("All") }
+                )
+            }
+            
+            items(categories) { category ->
+                FilterChip(
+                    selected = selectedCategory == category,
+                    onClick = { onCategorySelected(category) },
+                    label = { Text(category) }
+                )
+            }
+        }
+        
+        Divider()
+        
+        // Menu Grid
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(minSize = 160.dp),
+            contentPadding = PaddingValues(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(menuItems) { item ->
+                MenuItemCard(
+                    item = item,
+                    onAddClick = { onItemSelected(item) }
+                )
+            }
         }
     }
 }
@@ -217,266 +424,95 @@ private fun MenuItemCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        onClick = onAddClick,
+        onClick = if (item.isAvailable) onAddClick else { {} },
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = if (item.isAvailable) {
+                MaterialTheme.colorScheme.surfaceVariant
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            }
         )
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
                 text = item.itemName,
                 style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
             
             item.itemNameMm?.let {
                 Text(
                     text = it,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
             
-            Spacer(modifier = Modifier.height(8.dp))
-            
             Text(
-                text = "${item.price.toInt()} MMK",
-                style = MaterialTheme.typography.titleSmall,
+                text = formatCurrency(item.price),
+                style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold
             )
             
+            Text(
+                text = "Tax: ${(item.taxRate * 100).toInt()}%",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.secondary
+            )
+            
             if (!item.isAvailable) {
-                Text(
-                    text = "Out of Stock",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.error
-                )
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    shape = RoundedCornerShape(4.dp)
+                ) {
+                    Text(
+                        text = "Out of Stock",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-private fun OrderCart(
-    orderItems: List<OrderItem>,
-    orderSummary: OrderSummary,
-    isParcelOrder: Boolean,
-    onQuantityChange: (Long, Int) -> Unit,
-    onRemoveItem: (Long) -> Unit,
-    onCheckout: () -> Unit
+private fun FinalizeOrderDialog(
+    cartState: CartState,
+    tableName: String?,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .width(400.dp)
-            .fillMaxHeight()
-            .background(MaterialTheme.colorScheme.surface)
-    ) {
-        // Cart header
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.primaryContainer,
-            tonalElevation = 2.dp
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Order Items",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                Badge {
-                    Text(orderSummary.itemCount.toString())
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Finalize Order") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                tableName?.let {
+                    Text("Table: $it", style = MaterialTheme.typography.bodyLarge)
                 }
-            }
-        }
-        
-        // Cart items
-        LazyColumn(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(orderItems) { orderItem ->
-                OrderItemRow(
-                    orderItem = orderItem,
-                    onQuantityChange = onQuantityChange,
-                    onRemove = onRemoveItem
-                )
-            }
-        }
-        
-        Divider()
-        
-        // Summary
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("Subtotal:", style = MaterialTheme.typography.bodyLarge)
+                Text("Items: ${cartState.items.size}", style = MaterialTheme.typography.bodyLarge)
+                Text("Subtotal: ${formatCurrency(cartState.subtotal)}", style = MaterialTheme.typography.bodyLarge)
+                Text("Tax: ${formatCurrency(cartState.tax)}", style = MaterialTheme.typography.bodyLarge)
+                Divider()
                 Text(
-                    "${orderSummary.subtotal.toInt()} MMK",
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
-            
-            if (isParcelOrder) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Text("Parcel Fee:", style = MaterialTheme.typography.bodyLarge)
-                    Text(
-                        "${orderSummary.parcelFee.toInt()} MMK",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-            
-            Divider(modifier = Modifier.padding(vertical = 8.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    "Total:",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    "${orderSummary.total.toInt()} MMK",
+                    "Grand Total: ${formatCurrency(cartState.grandTotal)}",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
             }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Button(
-                onClick = onCheckout,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                enabled = orderItems.isNotEmpty()
-            ) {
-                Icon(Icons.Default.Payment, "Checkout")
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Proceed to Payment")
-            }
-        }
-    }
-}
-
-@Composable
-private fun OrderItemRow(
-    orderItem: OrderItem,
-    onQuantityChange: (Long, Int) -> Unit,
-    onRemove: (Long) -> Unit
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = orderItem.menuItem.itemName,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "${orderItem.menuItem.price.toInt()} MMK each",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            
-            // Quantity controls
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(
-                    onClick = { onQuantityChange(orderItem.menuItem.itemId, orderItem.quantity - 1) }
-                ) {
-                    Icon(Icons.Default.Remove, "Decrease")
-                }
-                
-                Text(
-                    text = orderItem.quantity.toString(),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                
-                IconButton(
-                    onClick = { onQuantityChange(orderItem.menuItem.itemId, orderItem.quantity + 1) }
-                ) {
-                    Icon(Icons.Default.Add, "Increase")
-                }
-                
-                IconButton(
-                    onClick = { onRemove(orderItem.menuItem.itemId) },
-                    colors = IconButtonDefaults.iconButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Icon(Icons.Default.Delete, "Remove")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CheckoutDialog(
-    orderSummary: OrderSummary,
-    isParcelOrder: Boolean,
-    onDismiss: () -> Unit,
-    onConfirm: (String?) -> Unit
-) {
-    var customerName by remember { mutableStateOf("") }
-    
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Confirm Order") },
-        text = {
-            Column {
-                Text("Total: ${orderSummary.total.toInt()} MMK")
-                
-                if (isParcelOrder) {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedTextField(
-                        value = customerName,
-                        onValueChange = { customerName = it },
-                        label = { Text("Customer Name") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
         },
         confirmButton = {
-            Button(onClick = { onConfirm(customerName.ifBlank { null }) }) {
+            Button(onClick = onConfirm) {
                 Text("Confirm")
             }
         },
@@ -486,4 +522,8 @@ private fun CheckoutDialog(
             }
         }
     )
+}
+
+private fun formatCurrency(amount: Double): String {
+    return NumberFormat.getCurrencyInstance(Locale("en", "MM")).format(amount)
 }
