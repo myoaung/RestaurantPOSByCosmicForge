@@ -219,6 +219,27 @@ class AuditLogger @Inject constructor(
         )
     }
     
+    /**
+     * Log chief performance metrics
+     */
+    fun logChiefPerformance(
+        chiefId: Long,
+        chiefName: String,
+        detailId: Long,
+        itemName: String,
+        prepTimeSeconds: Long
+    ) {
+        logAction(
+            actionType = "CHIEF_PERFORMANCE",
+            userId = chiefId,
+            userName = chiefName,
+            roleLevel = 2, // Chief role level
+            targetType = "ORDER_DETAIL",
+            targetId = detailId.toString(),
+            actionDetails = "Item: $itemName, Prep Time: ${prepTimeSeconds}s"
+        )
+    }
+    
     companion object {
         private const val TAG = "AuditLogger"
     }

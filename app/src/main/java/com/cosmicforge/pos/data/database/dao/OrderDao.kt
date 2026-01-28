@@ -30,6 +30,9 @@ interface OrderDao {
     @Query("SELECT * FROM orders WHERE DATE(created_at/1000, 'unixepoch', 'localtime') = DATE('now', 'localtime') ORDER BY created_at DESC")
     fun getTodayOrders(): Flow<List<OrderEntity>>
     
+    @Query("SELECT * FROM orders WHERE DATE(created_at/1000, 'unixepoch', 'localtime') = DATE('now', 'localtime') ORDER BY created_at DESC")
+    suspend fun getTodayOrdersSnapshot(): List<OrderEntity>
+    
     @Query("SELECT * FROM orders WHERE created_at >= :startTime AND created_at <= :endTime ORDER BY created_at DESC")
     fun getOrdersByDateRange(startTime: Long, endTime: Long): Flow<List<OrderEntity>>
     

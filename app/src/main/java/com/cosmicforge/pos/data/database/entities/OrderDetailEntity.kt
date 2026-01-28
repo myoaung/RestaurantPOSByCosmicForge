@@ -29,6 +29,9 @@ data class OrderDetailEntity(
     @ColumnInfo(name = "unit_price")
     val unitPrice: Double,
     
+    @ColumnInfo(name = "total_price")
+    val totalPrice: Double, // quantity * unitPrice (cached for performance)
+    
     @ColumnInfo(name = "subtotal")
     val subtotal: Double,
     
@@ -41,6 +44,15 @@ data class OrderDetailEntity(
     // Chief accountability
     @ColumnInfo(name = "chief_id")
     val chiefId: Long? = null, // Assigned when chief "claims" the item
+    
+    @ColumnInfo(name = "claimed_by")
+    val claimedBy: String? = null, // Chief name who claimed this item
+    
+    @ColumnInfo(name = "claimed_by_id")
+    val claimedById: Long? = null, // Chief ID (explicit reference)
+    
+    @ColumnInfo(name = "claimed_at")
+    val claimedAtTimestamp: Long? = null, // When the item was claimed
     
     @ColumnInfo(name = "status")
     val status: String = "PENDING", // PENDING, COOKING, READY, SERVED

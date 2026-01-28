@@ -40,6 +40,12 @@ data class OrderEntity(
     @ColumnInfo(name = "parcel_fee")
     val parcelFee: Double = 0.0,
     
+    @ColumnInfo(name = "custom_parcel_fee")
+    val customParcelFee: Double? = null, // Manager override for parcel fee
+    
+    @ColumnInfo(name = "parcel_fee_override_by")
+    val parcelFeeOverrideBy: String? = null, // Waiter/Manager who set custom fee
+    
     @ColumnInfo(name = "tax")
     val tax: Double = 0.0,
     

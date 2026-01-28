@@ -47,6 +47,24 @@ interface OrderDetailDao {
     @Query("UPDATE order_details SET status = 'READY', end_time = :endTime WHERE detail_id = :detailId")
     suspend fun markReady(detailId: Long, endTime: Long = System.currentTimeMillis())
     
+    @Query("""
+        UPDATE order_details 
+        SET claimed_by_id = :chiefId, 
+            claimed_by = :chiefName, 
+            claimed_at = :claimTime,
+            chief_id = :chiefId,
+            start_time = :claimTime,
+            status = 'COOKING',
+            updated_at = :claimTime
+        WHERE detail_id = :detailId
+    """)
+    suspend fun updateClaimInfo(
+        detailId: Long, 
+        chiefId: Long, 
+        chiefName: String, 
+        claimTime: Long
+    )
+    
     @Query("UPDATE order_details SET is_void = 1, void_by = :managerId, void_reason = :reason WHERE detail_id = :detailId")
     suspend fun voidDetail(detailId: Long, managerId: Long, reason: String)
     
