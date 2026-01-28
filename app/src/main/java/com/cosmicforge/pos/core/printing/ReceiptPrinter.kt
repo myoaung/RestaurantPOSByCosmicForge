@@ -94,6 +94,9 @@ class ReceiptPrinter @Inject constructor() {
                     "CASH" -> {
                         appendLine("Cash Payment")
                     }
+                    else -> {
+                        // Other payment methods
+                    }
                 }
             }
             
@@ -179,6 +182,9 @@ class ReceiptPrinter @Inject constructor() {
                 when (method) {
                     "KPAY", "CBPAY" -> {
                         appendLine("Proof: ✓ VERIFIED")
+                    }
+                    else -> {
+                        // Other payment methods
                     }
                 }
             }

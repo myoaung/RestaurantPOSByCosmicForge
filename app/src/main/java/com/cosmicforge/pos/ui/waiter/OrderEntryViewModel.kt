@@ -218,6 +218,7 @@ class OrderEntryViewModel @Inject constructor(
                         itemNameMm = item.menuItem.itemNameMm,
                         quantity = item.quantity,
                         price = item.menuItem.price,
+                        unitPrice = item.menuItem.price,
                         totalPrice = item.totalPrice,
                         prepStation = item.menuItem.prepStation,
                         status = "PENDING"
