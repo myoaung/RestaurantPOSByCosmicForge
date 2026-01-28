@@ -19,12 +19,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cosmicforge.pos.data.database.entities.MenuItemEntity
+import com.cosmicforge.pos.data.database.entities.UserEntity
 import java.text.NumberFormat
 import java.util.Locale
 
 /**
  * Order entry screen with two-pane layout
- * Phase 4: Transaction Engine
+ * Phase 4: Transaction Engine with Database Persistence
  * Left: Cart with totals | Right: Category-filtered menu grid
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,58 +33,117 @@ import java.util.Locale
 fun OrderEntryScreen(
     tableId: Long? = null,
     tableName: String? = null,
+    currentUser: UserEntity,
     onOrderFinalized: () -> Unit = {},
     onBack: () -> Unit = {},
     cartViewModel: CartViewModel = hiltViewModel(),
-    menuViewModel: OrderEntryViewModel = hiltViewModel()
+    menuViewModel: OrderEntryViewModel = hiltViewModel(),
+    finalizationViewModel: OrderFinalizationViewModel = hiltViewModel()
 ) {
     val cartState by cartViewModel.cartState.collectAsState()
     val categories by menuViewModel.categories.collectAsState()
     val menuItems by menuViewModel.menuItems.collectAsState()
     val selectedCategory by menuViewModel.selectedCategory.collectAsState()
+    val finalizationState by finalizationViewModel.finalizationState.collectAsState()
     
     var showFinalizeDialog by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
     
-    Row(modifier = Modifier.fillMaxSize()) {
-        // LEFT PANE: Cart (40%)
-        CartPane(
-            cartState = cartState,
-            tableName = tableName,
-            onQuantityChange = { itemId, newQty ->
-                cartViewModel.updateQuantity(itemId, newQty)
-            },
-            onRemoveItem = { itemId ->
-                cartViewModel.removeItem(itemId)
-            },
-            onClearCart = {
+    // Handle finalization state changes
+    LaunchedEffect(finalizationState) {
+        when (val state = finalizationState) {
+            is FinalizationState.Success -> {
+                snackbarHostState.showSnackbar(
+                    message = "Order ${state.orderNumber} finalized successfully!",
+                    duration = SnackbarDuration.Short
+                )
                 cartViewModel.clearCart()
-            },
-            onFinalizeOrder = {
-                showFinalizeDialog = true
-            },
-            onBack = onBack,
-            modifier = Modifier
-                .weight(0.4f)
-                .fillMaxHeight()
-        )
-        
-        Divider(modifier = Modifier.width(1.dp).fillMaxHeight())
-        
-        // RIGHT PANE: Menu Grid (60%)
-        MenuPane(
-            categories = categories,
-            selectedCategory = selectedCategory,
-            menuItems = menuItems,
-            onCategorySelected = { category ->
-                menuViewModel.selectCategory(category)
-            },
-            onItemSelected = { menuItem ->
-                cartViewModel.addItem(menuItem)
-            },
-            modifier = Modifier
-                .weight(0.6f)
-                .fillMaxHeight()
-        )
+                finalizationViewModel.resetState()
+                onOrderFinalized()
+            }
+            is FinalizationState.Error -> {
+                snackbarHostState.showSnackbar(
+                    message = "Error: ${state.message}",
+                    duration = SnackbarDuration.Long
+                )
+                finalizationViewModel.resetState()
+            }
+            else -> {}
+        }
+    }
+    
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }
+    ) { padding ->
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+            Row(modifier = Modifier.fillMaxSize()) {
+                // LEFT PANE: Cart (40%)
+                CartPane(
+                    cartState = cartState,
+                    tableName = tableName,
+                    onQuantityChange = { itemId, newQty ->
+                        cartViewModel.updateQuantity(itemId, newQty)
+                    },
+                    onRemoveItem = { itemId ->
+                        cartViewModel.removeItem(itemId)
+                    },
+                    onClearCart = {
+                        cartViewModel.clearCart()
+                    },
+                    onFinalizeOrder = {
+                        showFinalizeDialog = true
+                    },
+                    onBack = onBack,
+                    modifier = Modifier
+                        .weight(0.4f)
+                        .fillMaxHeight()
+                )
+                
+                Divider(modifier = Modifier.width(1.dp).fillMaxHeight())
+                
+                // RIGHT PANE: Menu Grid (60%)
+                MenuPane(
+                    categories = categories,
+                    selectedCategory = selectedCategory,
+                    menuItems = menuItems,
+                    onCategorySelected = { category ->
+                        menuViewModel.selectCategory(category)
+                    },
+                    onItemSelected = { menuItem ->
+                        cartViewModel.addItem(menuItem)
+                    },
+                    modifier = Modifier
+                        .weight(0.6f)
+                        .fillMaxHeight()
+                )
+            }
+            
+            // Loading overlay
+            if (finalizationState is FinalizationState.Loading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.8f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Card(
+                        modifier = Modifier.padding(32.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            CircularProgressIndicator()
+                            Text(
+                                "Finalizing order...",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
     
     // Finalize Order Dialog
@@ -93,10 +153,14 @@ fun OrderEntryScreen(
             tableName = tableName,
             onDismiss = { showFinalizeDialog = false },
             onConfirm = {
-                // TODO: Integrate with OrderRepository to save order
-                cartViewModel.clearCart()
+                finalizationViewModel.finalizeOrder(
+                    tableId = tableId,
+                    tableName = tableName,
+                    waiterName = currentUser.userName,
+                    waiterId = currentUser.userId,
+                    cartState = cartState
+                )
                 showFinalizeDialog = false
-                onOrderFinalized()
             }
         )
     }

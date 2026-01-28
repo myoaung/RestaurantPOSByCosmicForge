@@ -77,7 +77,7 @@ fun MainDashboardScreen(
         ) {
             when (selectedRoute) {
                 NavigationRoute.FLOOR_MAP -> FloorMapScreen()
-                NavigationRoute.ORDERS -> OrderEntryScreen()
+                NavigationRoute.ORDERS -> OrderEntryScreen(currentUser = currentUser)
                 NavigationRoute.KDS -> KDSScreen()
                 NavigationRoute.ADMIN -> OwnerDashboardScreen()
             }
