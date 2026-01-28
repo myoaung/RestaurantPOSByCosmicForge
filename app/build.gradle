@@ -46,6 +46,10 @@ android {
 
     kotlinOptions {
         jvmTarget = '17'
+        // This is a more direct way to pass the arguments in some Gradle versions
+        freeCompilerArgs += [
+            "-Xopt-in=androidx.compose.material3.ExperimentalMaterial3Api"
+        ]
     }
 
     buildFeatures {

@@ -251,11 +251,12 @@ class AuditLogger @Inject constructor(
 @Singleton
 class DeviceInfoProvider @Inject constructor() {
     
-    private val deviceId: String by lazy {
+    // We renamed the internal variable to _deviceId to avoid the name clash
+    private val _deviceId: String by lazy {
         java.util.UUID.randomUUID().toString()
     }
     
-    fun getDeviceId(): String = deviceId
+    fun getDeviceId(): String = _deviceId
     
     fun getIpAddress(): String? {
         return try {
