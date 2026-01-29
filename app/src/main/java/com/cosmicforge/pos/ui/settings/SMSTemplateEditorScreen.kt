@@ -1,5 +1,7 @@
-package com.cosmicforge.pos.ui.settings
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
+package com.cosmicforge.pos.ui.settings
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn

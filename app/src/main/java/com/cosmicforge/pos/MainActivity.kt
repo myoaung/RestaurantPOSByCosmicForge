@@ -1,6 +1,7 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package com.cosmicforge.pos
 
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -11,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope
 import com.cosmicforge.pos.ui.theme.CosmicForgeTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
