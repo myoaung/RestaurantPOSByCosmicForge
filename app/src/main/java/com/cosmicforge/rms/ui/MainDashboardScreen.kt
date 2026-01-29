@@ -1,0 +1,152 @@
+package com.cosmicforge.rms.ui
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.cosmicforge.rms.data.database.entities.UserEntity
+import com.cosmicforge.rms.ui.kds.KDSScreen
+import com.cosmicforge.rms.ui.owner.OwnerDashboardScreen
+import com.cosmicforge.rms.ui.waiter.FloorMapScreen
+import com.cosmicforge.rms.ui.waiter.OrderEntryScreen
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MainDashboardScreen(
+    currentUser: UserEntity,
+    onLogout: () -> Unit,
+    viewModel: MainDashboardViewModel = hiltViewModel()
+) {
+    var selectedRoute by remember { mutableStateOf(NavigationRoute.FLOOR_MAP) }
+    var selectedTableId by remember { mutableStateOf<String?>(null) }
+    var selectedTableName by remember { mutableStateOf<String?>(null) }
+    
+    Row(modifier = Modifier.fillMaxSize()) {
+        // Navigation Rail (Sidebar)
+        NavigationRail(
+            modifier = Modifier.fillMaxHeight(),
+            header = {
+                Column(
+                    modifier = Modifier.padding(vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Restaurant,
+                        contentDescription = "Cosmic Forge POS",
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Text(
+                        text = currentUser.userName,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
+            }
+        ) {
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Get visible routes based on user role
+            val visibleRoutes = getVisibleRoutes(currentUser.roleLevel)
+            
+            visibleRoutes.forEach { route ->
+                NavigationRailItem(
+                    icon = { Icon(route.icon, contentDescription = route.label) },
+                    label = { Text(route.label) },
+                    selected = selectedRoute == route,
+                    onClick = { 
+                        selectedRoute = route 
+                        // Reset table selection when manually changing routes (except when going to Orders? No, reset for fresh start)
+                        if (route != NavigationRoute.ORDERS) {
+                            selectedTableId = null
+                            selectedTableName = null
+                        }
+                    }
+                )
+            }
+            
+            Spacer(modifier = Modifier.weight(1f))
+            
+            // Logout button at bottom
+            NavigationRailItem(
+                icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout") },
+                label = { Text("Logout") },
+                selected = false,
+                onClick = onLogout
+            )
+        }
+        
+        // Main content area
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            when (selectedRoute) {
+                NavigationRoute.FLOOR_MAP -> FloorMapScreen(
+                    onTableSelected = { table ->
+                        selectedTableId = table.tableId
+                        selectedTableName = table.tableName
+                        selectedRoute = NavigationRoute.ORDERS
+                    }
+                )
+                NavigationRoute.ORDERS -> OrderEntryScreen(
+                    currentUser = currentUser,
+                    tableId = selectedTableId,
+                    tableName = selectedTableName,
+                    onBack = {
+                        selectedTableId = null
+                        selectedTableName = null
+                        selectedRoute = NavigationRoute.FLOOR_MAP
+                    }
+                )
+                NavigationRoute.KDS -> KDSScreen(currentUser = currentUser)
+                NavigationRoute.ADMIN -> OwnerDashboardScreen()
+            }
+        }
+    }
+}
+
+/**
+ * Get visible navigation routes based on user role
+ */
+private fun getVisibleRoutes(roleLevel: Int): List<NavigationRoute> {
+    return when (roleLevel) {
+        UserEntity.ROLE_OWNER -> listOf(
+            NavigationRoute.FLOOR_MAP,
+            NavigationRoute.ORDERS,
+            NavigationRoute.KDS,
+            NavigationRoute.ADMIN
+        )
+        UserEntity.ROLE_MANAGER -> listOf(
+            NavigationRoute.FLOOR_MAP,
+            NavigationRoute.ORDERS,
+            NavigationRoute.KDS,
+            NavigationRoute.ADMIN
+        )
+        UserEntity.ROLE_WAITER -> listOf(
+            NavigationRoute.FLOOR_MAP,
+            NavigationRoute.ORDERS
+        )
+        UserEntity.ROLE_CHIEF -> listOf(
+            NavigationRoute.KDS
+        )
+        else -> emptyList()
+    }
+}
+
+/**
+ * Navigation routes for the dashboard
+ */
+enum class NavigationRoute(
+    val label: String,
+    val icon: ImageVector
+) {
+    FLOOR_MAP("Floor Map", Icons.Default.GridView),
+    ORDERS("Orders", Icons.Default.Receipt),
+    KDS("Kitchen", Icons.Default.Kitchen),
+    ADMIN("Admin", Icons.Default.Settings)
+}

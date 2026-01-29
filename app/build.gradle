@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace 'com.cosmicforge.pos'
+    namespace 'com.cosmicforge.rms'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.cosmicforge.pos"
+        applicationId "com.cosmicforge.rms"
         minSdk 24
         targetSdk 34
         versionCode 1
