@@ -8,7 +8,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.Kitchen
 import androidx.compose.material.icons.filled.ManageAccounts
@@ -192,7 +192,7 @@ private fun PinEntryScreen(
             horizontalArrangement = Arrangement.Start
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Default.ArrowBack, "Back")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
             }
         }
         
