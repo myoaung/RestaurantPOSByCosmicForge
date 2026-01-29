@@ -31,7 +31,7 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun OrderEntryScreen(
-    tableId: Long? = null,
+    tableId: String? = null,
     tableName: String? = null,
     currentUser: UserEntity,
     onOrderFinalized: () -> Unit = {},
@@ -412,6 +412,7 @@ private fun CartItemCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MenuPane(
     categories: List<String>,
@@ -481,6 +482,7 @@ private fun MenuPane(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MenuItemCard(
     item: MenuItemEntity,

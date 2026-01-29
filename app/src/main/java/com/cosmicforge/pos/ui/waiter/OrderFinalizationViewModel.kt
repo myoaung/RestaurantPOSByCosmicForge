@@ -33,7 +33,7 @@ class OrderFinalizationViewModel @Inject constructor(
      * Finalize order: Save to database, update table status, log audit
      */
     fun finalizeOrder(
-        tableId: Long?,
+        tableId: String?,
         tableName: String?,
         waiterName: String,
         waiterId: Long,
@@ -58,7 +58,9 @@ class OrderFinalizationViewModel @Inject constructor(
                     totalAmount = cartState.grandTotal,
                     status = "PENDING",
                     orderType = if (tableId == null) "PARCEL" else "DINE_IN",
-                    createdAt = System.currentTimeMillis()
+                    createdAt = System.currentTimeMillis(),
+                    syncId = UUID.randomUUID().toString(),
+                    deviceId = "DEVICE_${System.currentTimeMillis()}" // TODO: Get actual device ID
                 )
                 
                 // Save order and get generated ID

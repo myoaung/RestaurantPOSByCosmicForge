@@ -1,9 +1,8 @@
 package com.cosmicforge.pos.data.database
 
-import com.cosmicforge.pos.data.database.dao.MenuItemDao
-import com.cosmicforge.pos.data.database.dao.TableDao
 import com.cosmicforge.pos.data.database.entities.MenuItemEntity
 import com.cosmicforge.pos.data.database.entities.TableEntity
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -12,8 +11,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class DatabaseSeeder @Inject constructor(
-    private val tableDao: TableDao,
-    private val menuItemDao: MenuItemDao
+    private val database: CosmicForgeDatabase
 ) {
     
     /**
@@ -21,7 +19,7 @@ class DatabaseSeeder @Inject constructor(
      */
     suspend fun seedMockData() {
         // Check if data already exists
-        val existingTables = tableDao.getAllActiveTables()
+        val existingTables = database.tableDao().getAllActiveTables().first()
         if (existingTables.isNotEmpty()) {
             return // Already seeded
         }
@@ -36,50 +34,50 @@ class DatabaseSeeder @Inject constructor(
     private suspend fun seedTables() {
         val tables = listOf(
             TableEntity(
-                tableNumber = "T-01",
-                capacity = 2,
-                shape = "Circle",
-                status = "AVAILABLE",
+                tableId = "T-01",
+                tableName = "Table 1",
+                capacity = 4,
+                status = TableEntity.STATUS_FREE,
                 positionX = 100f,
                 positionY = 100f
             ),
             TableEntity(
-                tableNumber = "T-02",
-                capacity = 4,
-                shape = "Square",
-                status = "OCCUPIED",
+                tableId = "T-02",
+                tableName = "Table 2",
+                capacity = 2,
+                status = TableEntity.STATUS_IN_USE,
                 positionX = 300f,
                 positionY = 100f,
                 currentOrderId = 1L // Mock order
             ),
             TableEntity(
-                tableNumber = "T-03",
+                tableId = "T-03",
+                tableName = "Table 3",
                 capacity = 4,
-                shape = "Square",
-                status = "AVAILABLE",
+                status = TableEntity.STATUS_FREE,
                 positionX = 500f,
                 positionY = 100f
             ),
             TableEntity(
-                tableNumber = "B-01",
+                tableId = "B-01",
+                tableName = "Bar 1",
                 capacity = 6,
-                shape = "Rectangle",
-                status = "AVAILABLE",
+                status = TableEntity.STATUS_FREE,
                 positionX = 100f,
                 positionY = 300f
             ),
             TableEntity(
-                tableNumber = "P-01",
+                tableId = "P-01",
+                tableName = "Patio 1",
                 capacity = 2,
-                shape = "Circle",
-                status = "DIRTY",
+                status = TableEntity.STATUS_DIRTY,
                 positionX = 500f,
                 positionY = 300f
             )
         )
         
         tables.forEach { table ->
-            tableDao.insertTable(table)
+            database.tableDao().insertTable(table)
         }
     }
     
@@ -124,7 +122,7 @@ class DatabaseSeeder @Inject constructor(
         )
         
         menuItems.forEach { item ->
-            menuItemDao.insertItem(item)
+            database.menuItemDao().insertItem(item)
         }
     }
 }

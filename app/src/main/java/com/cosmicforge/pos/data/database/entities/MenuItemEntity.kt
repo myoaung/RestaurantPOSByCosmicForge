@@ -28,6 +28,9 @@ data class MenuItemEntity(
     @ColumnInfo(name = "cost")
     val cost: Double = 0.0, // For profit margin calculation
     
+    @ColumnInfo(name = "tax_rate")
+    val taxRate: Double = 0.0,
+    
     @ColumnInfo(name = "description")
     val description: String? = null,
     

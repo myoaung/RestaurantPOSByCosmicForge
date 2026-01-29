@@ -23,6 +23,8 @@ fun MainDashboardScreen(
     viewModel: MainDashboardViewModel = hiltViewModel()
 ) {
     var selectedRoute by remember { mutableStateOf(NavigationRoute.FLOOR_MAP) }
+    var selectedTableId by remember { mutableStateOf<String?>(null) }
+    var selectedTableName by remember { mutableStateOf<String?>(null) }
     
     Row(modifier = Modifier.fillMaxSize()) {
         // Navigation Rail (Sidebar)
@@ -55,7 +57,14 @@ fun MainDashboardScreen(
                     icon = { Icon(route.icon, contentDescription = route.label) },
                     label = { Text(route.label) },
                     selected = selectedRoute == route,
-                    onClick = { selectedRoute = route }
+                    onClick = { 
+                        selectedRoute = route 
+                        // Reset table selection when manually changing routes (except when going to Orders? No, reset for fresh start)
+                        if (route != NavigationRoute.ORDERS) {
+                            selectedTableId = null
+                            selectedTableName = null
+                        }
+                    }
                 )
             }
             
@@ -76,9 +85,24 @@ fun MainDashboardScreen(
             color = MaterialTheme.colorScheme.background
         ) {
             when (selectedRoute) {
-                NavigationRoute.FLOOR_MAP -> FloorMapScreen()
-                NavigationRoute.ORDERS -> OrderEntryScreen(currentUser = currentUser)
-                NavigationRoute.KDS -> KDSScreen()
+                NavigationRoute.FLOOR_MAP -> FloorMapScreen(
+                    onTableSelected = { table ->
+                        selectedTableId = table.tableId
+                        selectedTableName = table.tableName
+                        selectedRoute = NavigationRoute.ORDERS
+                    }
+                )
+                NavigationRoute.ORDERS -> OrderEntryScreen(
+                    currentUser = currentUser,
+                    tableId = selectedTableId,
+                    tableName = selectedTableName,
+                    onBack = {
+                        selectedTableId = null
+                        selectedTableName = null
+                        selectedRoute = NavigationRoute.FLOOR_MAP
+                    }
+                )
+                NavigationRoute.KDS -> KDSScreen(currentUser = currentUser)
                 NavigationRoute.ADMIN -> OwnerDashboardScreen()
             }
         }
@@ -120,12 +144,8 @@ enum class NavigationRoute(
     val label: String,
     val icon: ImageVector
 ) {
-    FLOOR_MAP("Floor Map", Icons.Default.TableRestaurant),
+    FLOOR_MAP("Floor Map", Icons.Default.GridView),
     ORDERS("Orders", Icons.Default.Receipt),
     KDS("Kitchen", Icons.Default.Kitchen),
     ADMIN("Admin", Icons.Default.Settings)
 }
-
-// Placeholder icon for TableRestaurant (using GridView as substitute)
-private val Icons.Default.TableRestaurant: ImageVector
-    get() = Icons.Default.GridView

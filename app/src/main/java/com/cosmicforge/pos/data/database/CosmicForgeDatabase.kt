@@ -21,7 +21,7 @@ import com.cosmicforge.pos.data.database.entities.*
         SecurityAuditEntity::class,
         SMSTemplateEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = true
 )
 @TypeConverters(DatabaseConverters::class)
@@ -38,6 +38,6 @@ abstract class CosmicForgeDatabase : RoomDatabase() {
     
     companion object {
         const val DATABASE_NAME = "cosmic_forge_db"
-        const val DATABASE_VERSION = 6
+        const val DATABASE_VERSION = 7
     }
 }

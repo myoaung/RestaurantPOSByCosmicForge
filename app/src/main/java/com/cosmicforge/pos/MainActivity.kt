@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
+import com.cosmicforge.pos.data.database.DatabaseSeeder
 import com.cosmicforge.pos.ui.theme.CosmicForgeTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -50,7 +51,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun WelcomeScreen() {
+fun WelcomeScreen(onNavigateToLogin: () -> Unit = {}) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
