@@ -1,15 +1,18 @@
 package com.cosmicforge.rms.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.cosmicforge.rms.BuildConfig
 import com.cosmicforge.rms.data.database.entities.UserEntity
 import com.cosmicforge.rms.ui.kds.KDSScreen
 import com.cosmicforge.rms.ui.owner.OwnerDashboardScreen
@@ -26,25 +29,107 @@ fun MainDashboardScreen(
     var selectedRoute by remember { mutableStateOf(NavigationRoute.FLOOR_MAP) }
     var selectedTableId by remember { mutableStateOf<String?>(null) }
     var selectedTableName by remember { mutableStateOf<String?>(null) }
+    var isRailExpanded by remember { mutableStateOf(false) }
+    var showProfileMenu by remember { mutableStateOf(false) }
     
     Row(modifier = Modifier.fillMaxSize()) {
-        // Navigation Rail (Sidebar)
+        // Expandable Navigation Rail
         NavigationRail(
-            modifier = Modifier.fillMaxHeight(),
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(if (isRailExpanded) 200.dp else 80.dp),
             header = {
                 Column(
-                    modifier = Modifier.padding(vertical = 16.dp),
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Restaurant,
-                        contentDescription = "Cosmic Forge POS",
-                        modifier = Modifier.size(48.dp)
-                    )
-                    Text(
-                        text = currentUser.userName,
-                        style = MaterialTheme.typography.labelSmall
-                    )
+                    // Hamburger toggle button
+                    IconButton(onClick = { isRailExpanded = !isRailExpanded }) {
+                        Icon(
+                            imageVector = Icons.Default.Menu,
+                            contentDescription = "Toggle Menu",
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                    
+                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    
+                    // Profile Header with Dropdown
+                    Box {
+                        Column(
+                            modifier = Modifier
+                                .clickable { showProfileMenu = !showProfileMenu }
+                                .padding(8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Restaurant,
+                                contentDescription = "Cosmic Forge RMS",
+                                modifier = Modifier.size(if (isRailExpanded) 40.dp else 32.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            
+                            if (isRailExpanded) {
+                                Text(
+                                    text = currentUser.userName,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = getRoleLabel(currentUser.roleLevel),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.secondary
+                                )
+                            }
+                        }
+                        
+                        // Profile Dropdown Menu
+                        DropdownMenu(
+                            expanded = showProfileMenu,
+                            onDismissRequest = { showProfileMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("System Settings") },
+                                onClick = {
+                                    showProfileMenu = false
+                                    selectedRoute = NavigationRoute.ADMIN
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Settings, contentDescription = null)
+                                }
+                            )
+                            
+                            Divider()
+                            
+                            DropdownMenuItem(
+                                text = { Text("Logout") },
+                                onClick = {
+                                    showProfileMenu = false
+                                    onLogout()
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.ExitToApp, contentDescription = null)
+                                }
+                            )
+                            
+                            Divider()
+                            
+                            // Version display
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = "Version: ${BuildConfig.VERSION_NAME}",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                },
+                                onClick = { },
+                                enabled = false
+                            )
+                        }
+                    }
                 }
             }
         ) {
@@ -56,28 +141,20 @@ fun MainDashboardScreen(
             visibleRoutes.forEach { route ->
                 NavigationRailItem(
                     icon = { Icon(route.icon, contentDescription = route.label) },
-                    label = { Text(route.label) },
+                    label = if (isRailExpanded) {
+                        { Text(route.label) }
+                    } else null,
                     selected = selectedRoute == route,
                     onClick = { 
                         selectedRoute = route 
-                        // Reset table selection when manually changing routes (except when going to Orders? No, reset for fresh start)
                         if (route != NavigationRoute.ORDERS) {
                             selectedTableId = null
                             selectedTableName = null
                         }
-                    }
+                    },
+                    alwaysShowLabel = isRailExpanded
                 )
             }
-            
-            Spacer(modifier = Modifier.weight(1f))
-            
-            // Logout button at bottom
-            NavigationRailItem(
-                icon = { Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Logout") },
-                label = { Text("Logout") },
-                selected = false,
-                onClick = onLogout
-            )
         }
         
         // Main content area
@@ -107,6 +184,19 @@ fun MainDashboardScreen(
                 NavigationRoute.ADMIN -> OwnerDashboardScreen()
             }
         }
+    }
+}
+
+/**
+ * Get role label for display
+ */
+private fun getRoleLabel(roleLevel: Int): String {
+    return when (roleLevel) {
+        UserEntity.ROLE_OWNER -> "Owner"
+        UserEntity.ROLE_MANAGER -> "Manager"
+        UserEntity.ROLE_WAITER -> "Waiter"
+        UserEntity.ROLE_CHIEF -> "Chief"
+        else -> "User"
     }
 }
 

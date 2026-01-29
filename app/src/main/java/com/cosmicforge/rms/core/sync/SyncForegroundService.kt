@@ -81,7 +81,7 @@ class SyncForegroundService : Service() {
         )
         
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Cosmic Forge POS")
+            .setContentTitle("Cosmic Forge RMS")
             .setContentText("Syncing with other devices...")
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentIntent(pendingIntent)

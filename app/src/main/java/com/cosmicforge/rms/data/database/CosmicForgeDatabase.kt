@@ -7,7 +7,7 @@ import com.cosmicforge.rms.data.database.dao.*
 import com.cosmicforge.rms.data.database.entities.*
 
 /**
- * Main Room Database for Cosmic Forge POS
+ * Main Room Database for Cosmic Forge RMS
  * Uses SQLCipher for encryption
  */
 @Database(

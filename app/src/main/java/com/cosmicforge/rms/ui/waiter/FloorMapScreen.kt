@@ -107,7 +107,7 @@ private fun FloorMapHeader(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Floor Map",
+                text = "Floor Map: Floor $selectedFloor",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold
             )
@@ -120,7 +120,21 @@ private fun FloorMapHeader(
                     FilterChip(
                         selected = selectedFloor == floor,
                         onClick = { onFloorChange(floor) },
-                        label = { Text("Floor $floor") }
+                        label = { Text("Floor $floor") },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        border = if (selectedFloor == floor) {
+                            FilterChipDefaults.filterChipBorder(
+                                borderColor = MaterialTheme.colorScheme.primary,
+                                selectedBorderColor = MaterialTheme.colorScheme.primary,
+                                borderWidth = 2.dp,
+                                selectedBorderWidth = 2.dp
+                            )
+                        } else {
+                            FilterChipDefaults.filterChipBorder(borderWidth = 1.dp)
+                        }
                     )
                 }
             }

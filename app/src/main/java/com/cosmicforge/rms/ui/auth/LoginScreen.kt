@@ -98,7 +98,7 @@ private fun UserSelectionScreen(
         Spacer(modifier = Modifier.height(48.dp))
         
         Text(
-            text = "🚀 Cosmic Forge POS",
+            text = "🚀 Cosmic Forge RMS",
             style = MaterialTheme.typography.displayMedium,
             fontWeight = FontWeight.Bold
         )
