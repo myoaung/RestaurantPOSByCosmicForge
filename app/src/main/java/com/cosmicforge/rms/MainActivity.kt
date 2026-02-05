@@ -43,26 +43,18 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // Phase 2: Direct launch with test ADMIN user
-                    var currentUser by remember { 
-                        mutableStateOf<UserEntity?>(
-                            // Test ADMIN user for visibility unlock
-                            UserEntity(
-                                userId = 1L,
-                                userName = "Admin",
-                                pinHash = "",
-                                roleLevel = UserEntity.ROLE_OWNER,
-                                isActive = true
-                            )
-                        ) 
-                    }
+                    // SECURITY GATE: ALWAYS start with null user
+                    // PRODUCTION: NO auto-login, NO bypass, NO test users
+                    var currentUser by remember { mutableStateOf<UserEntity?>(null) }
                     
+                    // Force PIN authentication for everyone
                     if (currentUser != null) {
                         MainDashboardScreen(
                             currentUser = currentUser!!,
                             onLogout = { currentUser = null }
                         )
                     } else {
+                        // MANDATORY: Profile Selection → PIN Entry
                         LoginScreen(
                             onLoginSuccess = { user -> currentUser = user }
                         )

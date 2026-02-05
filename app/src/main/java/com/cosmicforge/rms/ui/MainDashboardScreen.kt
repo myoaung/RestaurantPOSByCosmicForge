@@ -138,7 +138,12 @@ fun MainDashboardScreen(
             // Get visible routes based on user role
             val visibleRoutes = getVisibleRoutes(currentUser.roleLevel)
             
-            visibleRoutes.forEach { route ->
+            // OPERATIONS SECTION (Top of sidebar)
+            val operationsRoutes = visibleRoutes.filter { 
+                it == NavigationRoute.FLOOR_MAP || it == NavigationRoute.ORDERS || it == NavigationRoute.KDS 
+            }
+            
+            operationsRoutes.forEach { route ->
                 NavigationRailItem(
                     icon = { Icon(route.icon, contentDescription = route.label) },
                     label = if (isRailExpanded) {
@@ -152,6 +157,32 @@ fun MainDashboardScreen(
                             selectedTableName = null
                         }
                     },
+                    alwaysShowLabel = isRailExpanded
+                )
+            }
+            
+            // Spacer pushes Settings section to bottom
+            Spacer(modifier = Modifier.weight(1f))
+            
+            // Visual separator
+            if (visibleRoutes.contains(NavigationRoute.ADMIN)) {
+                Divider(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                )
+            }
+            
+            // SETTINGS SECTION (Bottom of sidebar)
+            val settingsRoutes = visibleRoutes.filter { it == NavigationRoute.ADMIN }
+            
+            settingsRoutes.forEach { route ->
+                NavigationRailItem(
+                    icon = { Icon(route.icon, contentDescription = route.label) },
+                    label = if (isRailExpanded) {
+                        { Text(route.label) }
+                    } else null,
+                    selected = selectedRoute == route,
+                    onClick = { selectedRoute = route },
                     alwaysShowLabel = isRailExpanded
                 )
             }

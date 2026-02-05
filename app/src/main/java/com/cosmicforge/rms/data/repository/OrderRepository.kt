@@ -8,6 +8,7 @@ import com.cosmicforge.rms.data.database.entities.OrderEntity
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
 import javax.inject.Singleton
+import android.util.Log
 
 /**
  * Repository for order management with real-time sync
@@ -20,27 +21,50 @@ class OrderRepository @Inject constructor(
 ) {
     
     /**
-     * Create new order with sync
+     * Create new order with sync (CRASH-PROOF VERSION)
+     * Local-first: Write to Stone Vault BEFORE attempting network broadcast
      */
     suspend fun createOrder(order: OrderEntity): Long {
-        val orderId = orderDao.insertOrder(order)
-        
-        // Sync to all devices
-        syncEngine.syncOrderCreate(order.copy(orderId = orderId))
-        
-        return orderId
+        return try {
+            // 1. LOCAL WRITE FIRST (Antigravity Protocol)
+            val orderId = orderDao.insertOrder(order)
+            
+            // 2. BACKGROUND SYNC (Non-blocking, error-safe)
+            try {
+                syncEngine.syncOrderCreate(order.copy(orderId = orderId))
+            } catch (syncError: Exception) {
+                Log.e("OrderRepository", "⚠️ Sync failed, queued for retry: ${syncError.message}")
+                // Sync engine already handles queueing via SyncQueueEntity
+            }
+            
+            orderId
+        } catch (localError: Exception) {
+            Log.e("OrderRepository", "❌ CRITICAL: Local vault write failed: ${localError.message}")
+            throw localError // Re-throw to inform UI
+        }
     }
     
     /**
-     * Add item to order
+     * Add item to order (CRASH-PROOF VERSION)
+     * Local-first: Write to database before attempting sync
      */
     suspend fun addOrderDetail(detail: OrderDetailEntity): Long {
-        val detailId = orderDetailDao.insertDetail(detail)
-        
-        // Sync detail
-        syncEngine.syncOrderDetailUpdate(detail.copy(detailId = detailId))
-        
-        return detailId
+        return try {
+            // 1. LOCAL WRITE FIRST
+            val detailId = orderDetailDao.insertDetail(detail)
+            
+            // 2. BACKGROUND SYNC (Non-blocking)
+            try {
+                syncEngine.syncOrderDetailUpdate(detail.copy(detailId = detailId))
+            } catch (syncError: Exception) {
+                Log.e("OrderRepository", "⚠️ Detail sync failed, queued: ${syncError.message}")
+            }
+            
+            detailId
+        } catch (localError: Exception) {
+            Log.e("OrderRepository", "❌ CRITICAL: Detail write failed: ${localError.message}")
+            throw localError
+        }
     }
     
     /**
@@ -105,7 +129,8 @@ class OrderRepository @Inject constructor(
     ) {
         orderDetailDao.updateClaimInfo(detailId, chiefId, chiefName, claimTime)
         
-        // Status is already updated in updateClaimInfo
+        // Broadcast claim to all tablets via mesh network
+        syncEngine.syncChiefClaim(detailId, chiefId, chiefName)
     }
     
     /**
@@ -114,6 +139,12 @@ class OrderRepository @Inject constructor(
     suspend fun markDetailReady(detailId: Long, readyTime: Long) {
         orderDetailDao.updateReadyTime(detailId, readyTime)
         orderDetailDao.updateStatus(detailId, "READY")
+        
+        // Broadcast ready status to all tablets
+        val detail = orderDetailDao.getDetailById(detailId)
+        detail?.let {
+            syncEngine.syncChiefClaim(detailId, it.claimedBy ?: 0L, it.claimedByName ?: "Unknown")
+        }
     }
     
     /**
