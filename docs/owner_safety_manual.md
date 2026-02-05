@@ -17,14 +17,32 @@
 ---
 
 ## SYSTEM OVERVIEW
+## စနစ်အကြောင်းအရာ
 
-Cosmic Forge POS is a **peer-to-peer (P2P) restaurant management system** that works even when internet is down. All 8 tablets synchronize wirelessly without a central server.
+**English:** Cosmic Forge POS is a **peer-to-peer (P2P) restaurant management system** that works even when internet is down. All 8 tablets synchronize wirelessly without a central server.
+
+**Burmese:** Cosmic Forge POS သည် **peer-to-peer (P2P) စားသောက်ဆိုင်စီမံခန့်ခွဲမှုစနစ်** ဖြစ်ပြီး အင်တာနက်မရှိသော်လည်း အလုပ်လုပ်နိုင်ပါသည်။ Tablet ၈ လုံးအားလုံးသည် ဗဟိုဆာဗာမလိုအပ်ဘဲ ကြိုးမဲ့ချိတ်ဆက်မှုဖြင့် အချက်အလက်များ ထပ်တူပြုနိုင်ပါသည်။
 
 ### What Makes It Safe?
+### ဘာကြောင့် စိတ်ချရသလဲ?
+
+**English:**
 - ✅ **Encrypted Database** - Customer data protected with SQLCipher
 - ✅ **Audit Trail** - Every action logged with timestamp and user name
 - ✅ **Backup Recovery** - Automatic backups every hour
 - ✅ **Manager Overrides** - Managers can void/override staff mistakes
+
+**Burmese:**
+- ✅ **ကုဒ်ဝှက်ထားသော ဒေတာဘေ့စ်** - သုံးစွဲသူအချက်အလက်များကို SQLCipher ဖြင့် ကာကွယ်ထားပါသည်
+- ✅ **စာရင်းစစ်ခြေရာခံမှု** - လုပ်ဆောင်ချက်တိုင်းကို အချိန်နှင့် အမည်ဖြင့် မှတ်တမ်းတင်ထားပါသည်
+- ✅ **အရန်ကူးယူမှု** - တစ်နာရီတစ်ကြိမ် အလိုအလျောက် backup လုပ်ပေးပါသည်
+- ✅ **မန်နေဂျာ၏ အခွင့်အာဏာ** - မန်နေဂျာများသည် ဝန်ထမ်းများ၏ အမှားများကို ပယ်ဖျက်/ပြင်ဆင်နိုင်ပါသည်
+
+### 1. THE OFFLINE-FIRST PROMISE (အင်တာနက်မရှိသော်လည်း စိတ်ချရမှု)
+
+**English:** Your data is safe even during WiFi failure. Every order is saved to the local 'Stone Vault' first.
+
+**Burmese:** WiFi ပြတ်တောက်သွားပါကလည်း သင့်အချက်အလက်များ ဆုံးရှုံးမည်မဟုတ်ပါ။ အော်ဒါတိုင်းကို Tablet ထဲတွင် အရင်ဦးဆုံး သေချာစွာ သိမ်းဆည်းထားမည်ဖြစ်ပါသည်။
 
 ---
 
@@ -87,6 +105,18 @@ Reason: Manager's authority overrides waiter
 - ✅ No waiter can accidentally keep a voided order
 - ✅ Accountability is maintained
 
+### 2. ANTI-DOUBLE-BILLING (ငွေပိုမကျသင့်စေရန် ကာကွယ်ခြင်း)
+
+**English:** Our "Mesh Shield" technology prevents a single order from being charged twice.
+
+**Burmese:** ကျွန်ုပ်တို့၏ "Mesh Shield" နည်းပညာသည် အော်ဒါတစ်ခုကို နှစ်ခါငွေကောက်ခံခြင်းမှ ကာကွယ်ပေးပါသည်။
+
+### 3. MANAGER SUPREMACY (မန်နေဂျာ၏ အခွင့်အာဏာ)
+
+**English:** The Manager's VOID command always defeats a Waiter's PENDING order.
+
+**Burmese:** မန်နေဂျာ၏ ပယ်ဖျက်ခြင်း (VOID) သည် ဝန်ထမ်း၏ အော်ဒါတင်ခြင်းထက် ပိုမိုအရေးပါသည်။ ၎င်းသည် ငွေစာရင်းမှန်ကန်မှုကို အမြဲတမ်းစိတ်ချစေပါသည်။
+
 ---
 
 ### What If Two Managers Conflict?
@@ -106,8 +136,11 @@ This is **astronomically rare** (happens 1 in billions), but the system handles 
 ---
 
 ## 8-CHIEF ACCOUNTABILITY SYSTEM
+## ၈-ဦး ချက်ပြုတ်ဆရာကြီးများ တာဝန်ခံမှုစနစ်
 
-Each of the 8 kitchen chiefs can claim order items to ensure accountability.
+**English:** Each of the 8 kitchen chiefs can claim order items to ensure accountability.
+
+**Burmese:** မီးဖိုချက်ဆရာကြီး ၈ ဦးတိုင်းသည် မိမိချက်ပြုတ်သော အစားအစာများကို တာဝန်ယူနိုင်ပြီး တာဝန်ခံမှုကို သေချာစေပါသည်။
 
 ### How It Works
 
