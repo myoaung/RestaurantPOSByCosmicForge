@@ -19,5 +19,9 @@ class CosmicForgeApplication : Application() {
         // Initialize 30-day retention worker (Phase 3)
         // Runs daily at 3 AM to cleanup old processed_messages
         com.cosmicforge.rms.core.workers.ProcessedMessagesCleanupWorker.schedule(this)
+        
+        // Initialize daily reconciliation worker (Phase 6)
+        // Runs daily at 11:59 PM to generate Financial Crystal Report
+        com.cosmicforge.rms.core.workers.DailyReconciliationWorker.schedule(this)
     }
 }

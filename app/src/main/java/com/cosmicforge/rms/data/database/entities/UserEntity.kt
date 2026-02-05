@@ -6,7 +6,7 @@ import androidx.room.PrimaryKey
 
 /**
  * User entity with role-based access control
- * Roles: 1=Owner, 2=Manager, 3=Waiter, 4=Chief
+ * Roles: 0=Architect, 1=Owner, 2=Manager, 3=Waiter, 4=Chief
  */
 @Entity(tableName = "users")
 data class UserEntity(
@@ -21,7 +21,7 @@ data class UserEntity(
     val pinHash: String, // SHA-256 hash of PIN
     
     @ColumnInfo(name = "role_level")
-    val roleLevel: Int, // 1:Owner, 2:Manager, 3:Waiter, 4:Chief
+    val roleLevel: Int, // 0:Architect, 1:Owner, 2:Manager, 3:Waiter, 4:Chief
     
     @ColumnInfo(name = "station_id")
     val stationId: String? = null, // e.g., 'KITCHEN_HOT', 'KITCHEN_COLD', 'BAR'
@@ -36,13 +36,16 @@ data class UserEntity(
     val updatedAt: Long = System.currentTimeMillis()
 ) {
     companion object {
-        const val ROLE_OWNER = 1
-        const val ROLE_MANAGER = 2
-        const val ROLE_WAITER = 3
-        const val ROLE_CHIEF = 4
+        // Role hierarchy (highest to lowest access)
+        const val ROLE_ARCHITECT = 0 // System Administrator (PIN: 0000)
+        const val ROLE_OWNER = 1      // Restaurant Owner (PIN: 9999)
+        const val ROLE_MANAGER = 2    // Manager
+        const val ROLE_WAITER = 3     // Waiter
+        const val ROLE_CHIEF = 4      // Kitchen Chef
     }
     
     fun getRoleName(): String = when (roleLevel) {
+        ROLE_ARCHITECT -> "Architect"
         ROLE_OWNER -> "Owner"
         ROLE_MANAGER -> "Manager"
         ROLE_WAITER -> "Waiter"

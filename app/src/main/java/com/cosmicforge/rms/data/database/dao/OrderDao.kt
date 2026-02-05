@@ -36,6 +36,9 @@ interface OrderDao {
     @Query("SELECT * FROM orders WHERE created_at >= :startTime AND created_at <= :endTime ORDER BY created_at DESC")
     fun getOrdersByDateRange(startTime: Long, endTime: Long): Flow<List<OrderEntity>>
     
+    @Query("SELECT * FROM orders WHERE created_at >= :startTime AND created_at <= :endTime ORDER BY created_at DESC")
+    suspend fun getOrdersByDateRangeSnapshot(startTime: Long, endTime: Long): List<OrderEntity>
+    
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOrder(order: OrderEntity): Long
     
