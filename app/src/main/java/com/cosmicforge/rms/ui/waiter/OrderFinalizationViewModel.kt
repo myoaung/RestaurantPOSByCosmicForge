@@ -108,11 +108,17 @@ class OrderFinalizationViewModel @Inject constructor(
                     wasSuccessful = true
                 )
                 
+                // OPTIMISTIC UI: Emit success IMMEDIATELY after database write
+                // Don't wait for network sync - background sync happens asynchronously
                 _finalizationState.value = FinalizationState.Success(
                     orderId = orderId,
                     orderNumber = orderEntity.orderNumber,
                     tableName = tableName
                 )
+                
+                // Background sync logging (non-blocking)
+                android.util.Log.d("OrderFinalization", "✅ Order saved locally: ${orderEntity.orderNumber}")
+                android.util.Log.d("OrderFinalization", "🔄 Background sync queued (non-blocking)")
                 
             } catch (e: Exception) {
                 _finalizationState.value = FinalizationState.Error(

@@ -14,8 +14,20 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Sync Engine - Real-time data synchronization across devices
- * Implements local-first persistence with network sync
+ * Sync Engine - Antigravity Protocol Implementation
+ * 
+ * Implements offline-first sync with hybrid conflict resolution:
+ * - Persistent outbox queue (survives app kill)
+ * - Versioning + timestamp-based conflict resolution
+ * - Status priority ranking (Manager > Staff)
+ * - SHA-256 checksum validation
+ * - Exponential backoff retry (100ms, 200ms, 400ms, 800ms, 1600ms)
+ * - Dead letter vault for failed syncs
+ * 
+ * Stone Tier Requirements:
+ * ✓ Outbox Pattern: Orders persist in SyncQueueEntity
+ * ✓ Exponential Backoff: Retry delays increase exponentially
+ * ✓ Manager Supremacy: VOID (100) beats PENDING (10)
  */
 @Singleton
 class SyncEngine @Inject constructor(
@@ -23,13 +35,19 @@ class SyncEngine @Inject constructor(
     private val orderDao: OrderDao,
     private val orderDetailDao: OrderDetailDao,
     private val tableDao: TableDao,
+    private val syncQueueDao: SyncQueueDao,
+    private val deadLetterDao: DeadLetterDao,
+    private val processedMessagesDao: ProcessedMessagesDao, // Security Gate: Idempotency
     private val gson: Gson
 ) {
     
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     
-    private val _syncQueue = MutableStateFlow<List<SyncMessage>>(emptyList())
-    val syncQueue: StateFlow<List<SyncMessage>> = _syncQueue.asStateFlow()
+    // Observe queue size for UI (replaces in-memory queue)
+    val queueSize: Flow<Int> = syncQueueDao.observeQueueSize()
+    
+    // Observe dead letter count for UI badge
+    val deadLetterCount: Flow<Int> = deadLetterDao.observeUnresolvedCount()
     
     /**
      * Initialize sync engine
@@ -46,40 +64,59 @@ class SyncEngine @Inject constructor(
     
     /**
      * Sync order create
+     * Stone Tier: Persists to database queue before attempting sync
      */
     suspend fun syncOrderCreate(order: OrderEntity) {
         // Save locally first (local-first persistence)
         val orderId = orderDao.insertOrder(order)
         Log.d(TAG, "Order saved locally: $orderId")
         
-        // Then broadcast to network
-        val message = SyncMessage(
-            senderId = meshNetwork.getDeviceId(),
-            messageType = MessageType.ORDER_CREATE,
-            payload = gson.toJson(order),
-            version = order.version
+        // Queue to persistent database (survives app kill)
+        val payload = gson.toJson(order)
+        val checksum = ChecksumUtil.generateChecksum(payload)
+        
+        val queueItem = SyncQueueEntity(
+            messageId = java.util.UUID.randomUUID().toString(),
+            messageType = MessageType.ORDER_CREATE.name,
+            payload = payload,
+            checksum = checksum,
+            version = order.version,
+            timestamp = System.currentTimeMillis(),
+            highResTimestamp = System.nanoTime(),
+            isAdditive = ConflictResolver.isAdditiveChange(MessageType.ORDER_CREATE.name),
+            status = SyncStatus.PENDING
         )
         
-        queueMessage(message)
+        syncQueueDao.insertMessage(queueItem)
+        Log.d(TAG, "Order queued for sync: ${order.orderNumber}")
     }
     
     /**
-     * Sync order update
+     * Sync order update with conflict resolution
      */
-    suspend fun syncOrderUpdate(order: OrderEntity) {
+    suspend fun syncOrderUpdate(order: OrderEntity, userRole: String = "STAFF") {
         // Update locally first
         orderDao.updateOrder(order)
         Log.d(TAG, "Order updated locally: ${order.orderId}")
         
-        // Broadcast update
-        val message = SyncMessage(
-            senderId = meshNetwork.getDeviceId(),
-            messageType = MessageType.ORDER_UPDATE,
-            payload = gson.toJson(order),
-            version = order.version
+        // Queue with priority based on user role
+        val payload = gson.toJson(order)
+        val checksum = ChecksumUtil.generateChecksum(payload)
+        val priority = ConflictResolver.calculateMessagePriority(userRole, "UPDATE")
+        
+        val queueItem = SyncQueueEntity(
+            messageId = java.util.UUID.randomUUID().toString(),
+            messageType = MessageType.ORDER_UPDATE.name,
+            payload = payload,
+            checksum = checksum,
+            version = order.version,
+            timestamp = System.currentTimeMillis(),
+            highResTimestamp = System.nanoTime(),
+            priority = priority,
+            status = SyncStatus.PENDING
         )
         
-        queueMessage(message)
+        syncQueueDao.insertMessage(queueItem)
     }
     
     /**
@@ -105,13 +142,22 @@ class SyncEngine @Inject constructor(
         // Update locally
         orderDetailDao.updateDetail(detail)
         
-        val message = SyncMessage(
-            senderId = meshNetwork.getDeviceId(),
-            messageType = MessageType.ORDER_DETAIL_UPDATE,
-            payload = gson.toJson(detail)
+        // Queue to persistent database
+        val payload = gson.toJson(detail)
+        val checksum = ChecksumUtil.generateChecksum(payload)
+        
+        val queueItem = SyncQueueEntity(
+            messageId = java.util.UUID.randomUUID().toString(),
+            messageType = MessageType.ORDER_DETAIL_UPDATE.name,
+            payload = payload,
+            checksum = checksum,
+            version = 1,
+            timestamp = System.currentTimeMillis(),
+            highResTimestamp = System.nanoTime(),
+            status = SyncStatus.PENDING
         )
         
-        queueMessage(message)
+        syncQueueDao.insertMessage(queueItem)
     }
     
     /**
@@ -128,10 +174,21 @@ class SyncEngine @Inject constructor(
     
     /**
      * Handle incoming sync messages from other devices
+     * Security Gate: Idempotency check prevents double-processing
      */
     private fun handleIncomingMessage(message: SyncMessage) {
         scope.launch {
             try {
+                // SECURITY GATE: Idempotency Check (CRITICAL)
+                // Must check BEFORE processing to prevent double-billing
+                val alreadyProcessed = processedMessagesDao.isProcessed(message.messageId) > 0
+                if (alreadyProcessed) {
+                    Log.w(TAG, "⚠️ DUPLICATE MESSAGE REJECTED: ${message.messageId} (${message.messageType})")
+                    // Send ACK anyway to prevent sender from retrying
+                    sendAck(message)
+                    return@launch
+                }
+                
                 Log.d(TAG, "Processing incoming message: ${message.messageType} from ${message.senderId}")
                 
                 when (message.messageType) {
@@ -162,25 +219,55 @@ class SyncEngine @Inject constructor(
         if (existing == null) {
             orderDao.insertOrder(order)
             Log.d(TAG, "Order ${order.orderNumber} created from remote device")
+            
+            // Mark as processed (Security Gate: Idempotency)
+            processedMessagesDao.markAsProcessed(
+                ProcessedMessageEntity(
+                    messageId = message.messageId,
+                    messageType = message.messageType.name,
+                    senderId = message.senderId,
+                    checksum = message.checksum ?: "",
+                    payloadHash = ChecksumUtil.generateChecksum(message.payload)
+                )
+            )
         } else {
             Log.d(TAG, "Order ${order.orderNumber} already exists, skipping")
         }
     }
     
     private suspend fun handleOrderUpdate(message: SyncMessage) {
-        val order = gson.fromJson(message.payload, OrderEntity::class.java)
+        // Validate checksum first
+        if (!ChecksumUtil.validateChecksum(message.payload, message.checksum ?: "")) {
+            Log.e(TAG, "Checksum validation failed for order update")
+            return
+        }
         
+        val order = gson.fromJson(message.payload, OrderEntity::class.java)
         val existing = orderDao.getOrderBySyncId(order.syncId)
+        
         if (existing != null) {
-            // Conflict resolution: use version or last-write-wins
-            if (message.version >= existing.version) {
-                orderDao.updateOrder(order)
-                Log.d(TAG, "Order ${order.orderNumber} updated from remote device")
+            // Stone Tier: Hybrid conflict resolution
+            val shouldAccept = ConflictResolver.resolveVersionConflict(
+                localVersion = existing.version,
+                remoteVersion = order.version,
+                localTimestamp = existing.updatedAt,
+                remoteTimestamp = order.updatedAt
+            )
+            
+            if (shouldAccept) {
+                // Check for status conflict (Manager Supremacy)
+                val resolvedStatus = ConflictResolver.resolveStatusConflict(
+                    localStatus = existing.status,
+                    remoteStatus = order.status
+                )
+                
+                val mergedOrder = order.copy(status = resolvedStatus)
+                orderDao.updateOrder(mergedOrder)
+                Log.d(TAG, "Order ${order.orderNumber} updated (v${order.version})")
             } else {
-                Log.d(TAG, "Order ${order.orderNumber} update ignored (older version)")
+                Log.d(TAG, "Order ${order.orderNumber} update rejected (older version)")
             }
         } else {
-            // Order doesn't exist, create it
             orderDao.insertOrder(order)
         }
     }
@@ -231,30 +318,111 @@ class SyncEngine @Inject constructor(
         meshNetwork.broadcastMessage(ack)
     }
     
-    private fun queueMessage(message: SyncMessage) {
-        _syncQueue.value = _syncQueue.value + message
-        Log.d(TAG, "Message queued: ${message.messageType}")
-    }
+    /**
+     * Process sync queue with exponential backoff
+     * Stone Tier: Implements retry delays (100ms, 200ms, 400ms, 800ms, 1600ms)
+     */
     
     private fun startQueueProcessor() {
         scope.launch {
-            _syncQueue.collect { queue ->
-                if (queue.isNotEmpty()) {
-                    val message = queue.first()
+            while (isActive) {
+                try {
+                    val pendingMessages = syncQueueDao.getPendingMessages()
                     
-                    val sent = meshNetwork.broadcastMessage(message)
-                    if (sent > 0) {
-                        // Remove from queue after successful broadcast
-                        _syncQueue.value = queue.drop(1)
-                        Log.d(TAG, "Message sent to $sent peers, removed from queue")
-                    } else {
-                        Log.w(TAG, "No peers connected, message remains in queue")
+                    for (queueItem in pendingMessages) {
+                        // Stone Tier: Exponential backoff
+                        val retryDelay = SyncQueueEntity.getRetryDelay(queueItem.retryCount)
+                        
+                        // Check if enough time has passed since last attempt
+                        val timeSinceLastAttempt = queueItem.lastAttemptAt?.let {
+                            System.currentTimeMillis() - it
+                        } ?: Long.MAX_VALUE
+                        
+                        if (timeSinceLastAttempt < retryDelay) {
+                            continue // Not ready to retry yet
+                        }
+                        
+                        // Update status to SYNCING
+                        syncQueueDao.updateMessageStatus(
+                            queueId = queueItem.queueId,
+                            status = SyncStatus.SYNCING
+                        )
+                        
+                        // Attempt to send
+                        val success = attemptSync(queueItem)
+                        
+                        if (success) {
+                            // Success - remove from queue
+                            syncQueueDao.deleteMessage(queueItem.queueId)
+                            Log.d(TAG, "Synced: ${queueItem.messageType}")
+                        } else {
+                            // Failed - increment retry count
+                            syncQueueDao.incrementRetryCount(
+                                queueId = queueItem.queueId,
+                                errorMessage = "Network error"
+                            )
+                            
+                            // Check if max retries exceeded
+                            if (queueItem.retryCount + 1 >= SyncQueueEntity.MAX_RETRY_COUNT) {
+                                // Stone Tier: Move to Dead Letter Vault
+                                moveToDeadLetterVault(queueItem)
+                                syncQueueDao.deleteMessage(queueItem.queueId)
+                                Log.w(TAG, "Moved to dead letter vault: ${queueItem.messageType}")
+                            }
+                        }
                     }
                     
-                    delay(100) // Small delay to avoid overwhelming the network
+                    delay(500) // Check queue every 500ms
+                } catch (e: Exception) {
+                    Log.e(TAG, "Queue processor error", e)
+                    delay(1000)
                 }
             }
         }
+    }
+    
+    /**
+     * Attempt to sync a queue item
+     */
+    private suspend fun attemptSync(queueItem: SyncQueueEntity): Boolean {
+        return try {
+            val message = SyncMessage(
+                messageId = queueItem.messageId,
+                senderId = meshNetwork.getDeviceId(),
+                messageType = MessageType.valueOf(queueItem.messageType),
+                payload = queueItem.payload,
+                timestamp = queueItem.timestamp,
+                version = queueItem.version,
+                checksum = queueItem.checksum,
+                highResTimestamp = queueItem.highResTimestamp,
+                priority = queueItem.priority
+            )
+            
+            val sent = meshNetwork.broadcastMessage(message)
+            sent > 0
+        } catch (e: Exception) {
+            Log.e(TAG, "Sync attempt failed", e)
+            false
+        }
+    }
+    
+    /**
+     * Move failed sync to dead letter vault
+     * Stone Tier: Manager can review and resolve these
+     */
+    private suspend fun moveToDeadLetterVault(queueItem: SyncQueueEntity) {
+        val deadLetter = DeadLetterEntity(
+            originalMessageId = queueItem.messageId,
+            messageType = queueItem.messageType,
+            payload = queueItem.payload,
+            checksum = queueItem.checksum,
+            failureReason = DeadLetterEntity.REASON_NETWORK_TIMEOUT,
+            failureCount = queueItem.retryCount,
+            lastError = queueItem.errorMessage,
+            requiresManagerReview = true
+        )
+        
+        deadLetterDao.insertDeadLetter(deadLetter)
     }
     
     /**

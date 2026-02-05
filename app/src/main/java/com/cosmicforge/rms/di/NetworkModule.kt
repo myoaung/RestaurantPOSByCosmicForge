@@ -74,6 +74,9 @@ object NetworkModule {
         orderDao: com.cosmicforge.rms.data.database.dao.OrderDao,
         orderDetailDao: com.cosmicforge.rms.data.database.dao.OrderDetailDao,
         tableDao: com.cosmicforge.rms.data.database.dao.TableDao,
+        syncQueueDao: com.cosmicforge.rms.data.database.dao.SyncQueueDao,
+        deadLetterDao: com.cosmicforge.rms.data.database.dao.DeadLetterDao,
+        processedMessagesDao: com.cosmicforge.rms.data.database.dao.ProcessedMessagesDao,
         gson: Gson
     ): SyncEngine {
         return SyncEngine(
@@ -81,6 +84,9 @@ object NetworkModule {
             orderDao = orderDao,
             orderDetailDao = orderDetailDao,
             tableDao = tableDao,
+            syncQueueDao = syncQueueDao,
+            deadLetterDao = deadLetterDao,
+            processedMessagesDao = processedMessagesDao,
             gson = gson
         )
     }

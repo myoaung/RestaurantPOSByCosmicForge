@@ -1,6 +1,7 @@
 package com.cosmicforge.rms.data.database
 
 import androidx.room.TypeConverter
+import com.cosmicforge.rms.data.database.entities.SyncStatus
 import java.util.Date
 
 /**
@@ -16,5 +17,16 @@ class DatabaseConverters {
     @TypeConverter
     fun dateToTimestamp(date: Date?): Long? {
         return date?.time
+    }
+    
+    // Sync Status converters for SyncQueueEntity
+    @TypeConverter
+    fun fromSyncStatus(value: SyncStatus): String {
+        return value.name
+    }
+    
+    @TypeConverter
+    fun toSyncStatus(value: String): SyncStatus {
+        return SyncStatus.valueOf(value)
     }
 }

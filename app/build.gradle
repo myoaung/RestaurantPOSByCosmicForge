@@ -116,6 +116,11 @@ dependencies {
     implementation 'com.google.accompanist:accompanist-permissions:0.34.0'
     implementation 'com.google.accompanist:accompanist-systemuicontroller:0.34.0'
     
+    // WorkManager for background tasks (30-day retention worker)
+    implementation 'androidx.work:work-runtime-ktx:2.9.0'
+    implementation 'androidx.hilt:hilt-work:1.1.0'
+    ksp 'androidx.hilt:hilt-compiler:1.1.0'
+    
     // Testing
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3'

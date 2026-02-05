@@ -25,7 +25,7 @@ enum class ConnectionType {
 }
 
 /**
- * Sync message payload
+ * Sync message payload - Enhanced for Antigravity Protocol
  */
 data class SyncMessage(
     val messageId: String = UUID.randomUUID().toString(),
@@ -33,7 +33,10 @@ data class SyncMessage(
     val messageType: MessageType,
     val payload: String, // JSON serialized data
     val timestamp: Long = System.currentTimeMillis(),
-    val version: Long = 1
+    val version: Long = 1,
+    val checksum: String? = null, // SHA-256 hash for integrity
+    val highResTimestamp: Long = System.nanoTime(), // Nanosecond precision
+    val priority: Int = 0 // For status conflict ranking
 )
 
 /**
