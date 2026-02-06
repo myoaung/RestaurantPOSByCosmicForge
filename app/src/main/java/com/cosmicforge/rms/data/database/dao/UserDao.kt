@@ -9,6 +9,9 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE is_active = 1 ORDER BY user_name")
     fun getAllActiveUsers(): Flow<List<UserEntity>>
     
+    @Query("SELECT * FROM users ORDER BY user_name")
+    fun getAllUsers(): Flow<List<UserEntity>>
+    
     @Query("SELECT * FROM users WHERE user_id = :userId")
     suspend fun getUserById(userId: Long): UserEntity?
     

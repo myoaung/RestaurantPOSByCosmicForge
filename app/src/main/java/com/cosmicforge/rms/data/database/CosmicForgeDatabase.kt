@@ -10,10 +10,10 @@ import com.cosmicforge.rms.data.database.entities.*
  * Main Room Database for Cosmic Forge RMS
  * Uses SQLCipher for encryption
  * 
- * Version 9: Enhanced Antigravity with Idempotency
- * - SyncQueueEntity: Persistent outbox pattern for offline-first sync
- * - DeadLetterEntity: Failed sync vault for manager review
- * - ProcessedMessageEntity: Client-side idempotency tracking (Security Gate)
+ * Version 10: Complete HR Management System
+ * - RewardEntity: Staff performance tracking and gamification
+ * - BlacklistEntity: NRC-based hiring protection
+ * - LeaveRequestEntity: Time-off management with approval workflow
  */
 @Database(
     entities = [
@@ -25,11 +25,14 @@ import com.cosmicforge.rms.data.database.entities.*
         OrderDetailEntity::class,
         SecurityAuditEntity::class,
         SMSTemplateEntity::class,
-        SyncQueueEntity::class,      // NEW: Persistent sync queue
-        DeadLetterEntity::class,      // NEW: Dead letter vault
-        ProcessedMessageEntity::class // NEW: Idempotency tracking (Security Gate)
+        SyncQueueEntity::class,
+        DeadLetterEntity::class,
+        ProcessedMessageEntity::class,
+        RewardEntity::class,          // v10: Performance tracking
+        BlacklistEntity::class,       // v10: Hiring protection
+        LeaveRequestEntity::class     // v10: Leave management
     ],
-    version = 9,
+    version = 10,
     exportSchema = true
 )
 @TypeConverters(DatabaseConverters::class)
@@ -43,12 +46,15 @@ abstract class CosmicForgeDatabase : RoomDatabase() {
     abstract fun orderDetailDao(): OrderDetailDao
     abstract fun securityAuditDao(): SecurityAuditDao
     abstract fun smsTemplateDao(): SMSTemplateDao
-    abstract fun syncQueueDao(): SyncQueueDao           // NEW: Sync queue DAO
-    abstract fun deadLetterDao(): DeadLetterDao         // NEW: Dead letter DAO
-    abstract fun processedMessagesDao(): ProcessedMessagesDao // NEW: Idempotency DAO
+    abstract fun syncQueueDao(): SyncQueueDao
+    abstract fun deadLetterDao(): DeadLetterDao
+    abstract fun processedMessagesDao(): ProcessedMessagesDao
+    abstract fun rewardDao(): RewardDao                 // v10: Reward DAO
+    abstract fun blacklistDao(): BlacklistDao           // v10: Blacklist DAO
+    abstract fun leaveRequestDao(): LeaveRequestDao     // v10: Leave DAO
     
     companion object {
         const val DATABASE_NAME = "cosmic_forge_db"
-        const val DATABASE_VERSION = 9
+        const val DATABASE_VERSION = 10
     }
 }
