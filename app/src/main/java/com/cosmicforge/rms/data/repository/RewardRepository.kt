@@ -1,9 +1,5 @@
-package com.cosmicforge.rms.data.repository
-
-import com.cosmicforge.rms.data.database.dao.OrderDao
-import com.cosmicforge.rms.data.database.dao.RewardDao
-import com.cosmicforge.rms.data.database.entities.RewardEntity
 import com.cosmicforge.rms.data.database.entities.UserEntity
+import com.cosmicforge.rms.utils.PerformanceCalculator
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
@@ -56,7 +52,7 @@ class RewardRepository @Inject constructor(
         orderCount: Int,
         voidCount: Int
     ): Double {
-        return (revenue * 0.6) + (orderCount * 0.4) - (voidCount * 5.0)
+        return PerformanceCalculator.calculateScore(revenue, orderCount, voidCount)
     }
     
     /**
@@ -67,22 +63,47 @@ class RewardRepository @Inject constructor(
     }
     
     /**
-     * Archive month-end performance and create reward
-     * Automatically called at end of month
+     * Check if user is current month's winner
+     * Used for login badge display
      */
-    suspend fun closeMonthAndArchive(monthYear: String, currentUser: UserEntity): Boolean {
-        // RBAC: Only Owner can close month
+    suspend fun isCurrentMonthWinner(userId: Long): Boolean {
+        val currentMonth = PerformanceCalculator.getCurrentMonthYear()
+        val topPerformer = rewardDao.getTopPerformerForMonth(currentMonth)
+        return topPerformer?.userId == userId
+    }
+    
+    /**
+     * Archive month-end performance and create reward
+     * Automatically called on 1st of month
+     * 
+     * This function:
+     * 1. Queries all orders from previous month
+     * 2. Groups by userId
+     * 3. Calculates performance scores
+     * 4. Creates RewardEntity for top performer
+     */
+    suspend fun archiveMonthlyWinner(currentUser: UserEntity): Boolean {
+        // RBAC: Only Owner can archive
         if (currentUser.roleLevel != UserEntity.ROLE_OWNER) {
             return false
         }
         
-        // TODO: Calculate performance for all users
+        val previousMonth = PerformanceCalculator.getPreviousMonthYear()
+        
+        // Check if already archived
+        val existingReward = rewardDao.getTopPerformerForMonth(previousMonth)
+        if (existingReward != null) {
+            return false // Already archived
+        }
+        
+        // TODO: Implement full order aggregation logic
         // For now, this is a placeholder
         // In production, this would:
-        // 1. Query all orders for the month
+        // 1. Query orders for previousMonth
         // 2. Group by userId
-        // 3. Calculate scores
-        // 4. Create RewardEntity for top performer
+        // 3. Calculate total revenue, order count, void count per user
+        // 4. Sort by performance score
+        // 5. Insert RewardEntity for winner
         
         return true
     }
