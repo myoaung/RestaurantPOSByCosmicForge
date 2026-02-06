@@ -2,7 +2,9 @@ package com.cosmicforge.rms.data.database
 
 import com.cosmicforge.rms.data.database.entities.MenuItemEntity
 import com.cosmicforge.rms.data.database.entities.TableEntity
+import com.cosmicforge.rms.data.database.entities.UserEntity
 import kotlinx.coroutines.flow.first
+import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,6 +25,9 @@ class DatabaseSeeder @Inject constructor(
         if (existingTables.isNotEmpty()) {
             return // Already seeded
         }
+        
+        // Seed default users
+        seedDefaultUsers()
         
         // Seed tables
         seedTables()
@@ -124,5 +129,47 @@ class DatabaseSeeder @Inject constructor(
         menuItems.forEach { item ->
             database.menuItemDao().insertItem(item)
         }
+    }
+    
+    /**
+     * Seed default users (Architect + Owner)
+     * v9.7: Staff Management Foundation
+     */
+    private suspend fun seedDefaultUsers() {
+        val existingUsers = database.userDao().getAllUsers().first()
+        if (existingUsers.isNotEmpty()) return // Already seeded
+        
+        // Architect (System Admin - PIN: 0000)
+        database.userDao().insertUser(
+            UserEntity(
+                userName = "System Architect",
+                pinHash = hashPin("0000"),
+                roleLevel = UserEntity.ROLE_ARCHITECT,
+                nrcNumber = "SYSTEM",
+                joinDate = System.currentTimeMillis(),
+                isActive = true
+            )
+        )
+        
+        // Owner (Restaurant Owner - PIN: 9999)
+        database.userDao().insertUser(
+            UserEntity(
+                userName = "Owner",
+                pinHash = hashPin("9999"),
+                roleLevel = UserEntity.ROLE_OWNER,
+                nrcNumber = null, // To be updated by owner
+                joinDate = System.currentTimeMillis(),
+                isActive = true
+            )
+        )
+    }
+    
+    /**
+     * Hash PIN using SHA-256
+     */
+    private fun hashPin(pin: String): String {
+        return MessageDigest.getInstance("SHA-256")
+            .digest(pin.toByteArray())
+            .joinToString("") { "%02x".format(it) }
     }
 }

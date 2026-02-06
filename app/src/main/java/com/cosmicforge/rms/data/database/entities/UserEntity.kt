@@ -26,6 +26,12 @@ data class UserEntity(
     @ColumnInfo(name = "station_id")
     val stationId: String? = null, // e.g., 'KITCHEN_HOT', 'KITCHEN_COLD', 'BAR'
     
+    @ColumnInfo(name = "nrc_number")
+    val nrcNumber: String? = null, // Myanmar NRC (e.g., 12/TaKaNa(N)123456)
+    
+    @ColumnInfo(name = "join_date")
+    val joinDate: Long = System.currentTimeMillis(), // For tenure/benefit calculations
+    
     @ColumnInfo(name = "is_active")
     val isActive: Boolean = true,
     
