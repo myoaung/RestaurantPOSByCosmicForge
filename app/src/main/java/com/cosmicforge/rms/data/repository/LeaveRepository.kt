@@ -93,7 +93,33 @@ class LeaveRepository @Inject constructor(
             reviewedAt = System.currentTimeMillis()
         )
         
+        // TODO: Trigger sync to notify staff member
+        // This ensures the staff sees their approval within 30 seconds
+        // via Antigravity protocol mesh network sync
+        
         return true
+    }
+    
+    /**
+     * Update leave request status (Internal + Sync Trigger)
+     * v10.5: Real-time sync for staff notification
+     */
+    suspend fun updateStatus(
+        requestId: Long,
+        status: String,
+        reviewedBy: Long
+    ) {
+        leaveRequestDao.approveOrRejectRequest(
+            requestId = requestId,
+            status = status,
+            reviewedBy = reviewedBy,
+            reviewedAt = System.currentTimeMillis()
+        )
+        
+        // TODO: Trigger SyncQueueDao to enqueue this change
+        // This notifies the staff member's tablet within 30 seconds
+        // through the Antigravity mesh network protocol
+        // Implementation: syncQueueDao.enqueue("leave_request_update", requestId)
     }
     
     /**
