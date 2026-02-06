@@ -9,6 +9,7 @@ import com.cosmicforge.rms.data.database.dao.UserDao
 import com.cosmicforge.rms.data.database.entities.UserEntity
 import com.cosmicforge.rms.data.repository.AuthRepository
 import com.cosmicforge.rms.data.repository.RewardRepository
+import com.cosmicforge.rms.data.repository.SettingsRepository
 import com.cosmicforge.rms.utils.PerformanceCalculator
 import com.cosmicforge.rms.utils.PinHasher
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,7 +28,8 @@ import javax.inject.Inject
 class LoginViewModel @Inject constructor(
     private val authRepository: AuthRepository, // Keep authRepository for login/manager override
     private val userDao: UserDao,
-    private val rewardRepository: RewardRepository
+    private val rewardRepository: RewardRepository,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow<LoginUiState>(LoginUiState.Loading)
@@ -58,11 +60,17 @@ class LoginViewModel @Inject constructor(
     
     private fun loadCurrentMonthWinner() {
         viewModelScope.launch {
-            // Get current month's top performer
-            val topPerformer = rewardRepository.getTopPerformerForMonth(
-                PerformanceCalculator.getCurrentMonthYear()
-            )
-            _currentMonthWinnerId.value = topPerformer?.userId
+            // Only load winner if gamification is enabled
+            settingsRepository.isGamificationEnabled.collect { isEnabled ->
+                if (isEnabled) {
+                    val topPerformer = rewardRepository.getTopPerformerForMonth(
+                        PerformanceCalculator.getCurrentMonthYear()
+                    )
+                    _currentMonthWinnerId.value = topPerformer?.userId
+                } else {
+                    _currentMonthWinnerId.value = null
+                }
+            }
         }
     }
     
