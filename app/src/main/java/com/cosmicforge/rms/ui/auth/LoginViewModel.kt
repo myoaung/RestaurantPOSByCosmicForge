@@ -1,14 +1,23 @@
+```kotlin
 package com.cosmicforge.rms.ui.auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cosmicforge.rms.core.security.AuthResult
 import com.cosmicforge.rms.core.security.ManagerOverrideResult
+import com.cosmicforge.rms.data.database.dao.UserDao
 import com.cosmicforge.rms.data.database.entities.UserEntity
 import com.cosmicforge.rms.data.repository.AuthRepository
+import com.cosmicforge.rms.data.repository.RewardRepository
+import com.cosmicforge.rms.utils.PerformanceCalculator
+import com.cosmicforge.rms.utils.PinHasher
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import javax.inject.Inject
 
 /**
@@ -16,21 +25,46 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository, // Keep authRepository for login/manager override
+    private val userDao: UserDao,
+    private val rewardRepository: RewardRepository
 ) : ViewModel() {
     
-    private val _uiState = MutableStateFlow<LoginUiState>(LoginUiState.SelectUser)
+    private val _uiState = MutableStateFlow<LoginUiState>(LoginUiState.Loading)
     val uiState: StateFlow<LoginUiState> = _uiState.asStateFlow()
     
     private val _selectedUser = MutableStateFlow<UserEntity?>(null)
     val selectedUser: StateFlow<UserEntity?> = _selectedUser.asStateFlow()
     
-    val activeUsers: StateFlow<List<UserEntity>> = authRepository.getAllActiveUsers()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+    private val _activeUsers = MutableStateFlow<List<UserEntity>>(emptyList())
+    val activeUsers: StateFlow<List<UserEntity>> = _activeUsers.asStateFlow()
+    
+    private val _currentMonthWinnerId = MutableStateFlow<Long?>(null)
+    val currentMonthWinnerId: StateFlow<Long?> = _currentMonthWinnerId.asStateFlow()
+    
+    init {
+        loadActiveUsers()
+        loadCurrentMonthWinner()
+    }
+    
+    private fun loadActiveUsers() {
+        viewModelScope.launch {
+            userDao.getAllActiveUsers().collect { users ->
+                _activeUsers.value = users
+                _uiState.value = LoginUiState.UserSelection
+            }
+        }
+    }
+    
+    private fun loadCurrentMonthWinner() {
+        viewModelScope.launch {
+            // Get current month's top performer
+            val topPerformer = rewardRepository.getTopPerformerForMonth(
+                PerformanceCalculator.getCurrentMonthYear()
+            )
+            _currentMonthWinnerId.value = topPerformer?.userId
+        }
+    }
     
     /**
      * Select user for login
@@ -45,7 +79,7 @@ class LoginViewModel @Inject constructor(
      */
     fun backToUserSelection() {
         _selectedUser.value = null
-        _uiState.value = LoginUiState.SelectUser
+        _uiState.value = LoginUiState.UserSelection
     }
     
     /**

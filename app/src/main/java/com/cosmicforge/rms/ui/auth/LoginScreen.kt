@@ -83,45 +83,38 @@ fun LoginScreen(
 }
 
 @Composable
-private fun UserSelectionScreen(
+fun UserSelectionScreen(
     viewModel: LoginViewModel,
     onUserSelected: (UserEntity) -> Unit
 ) {
     val users by viewModel.activeUsers.collectAsState()
+    val winnerId by viewModel.currentMonthWinnerId.collectAsState()
     
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        Spacer(modifier = Modifier.height(48.dp))
-        
         Text(
-            text = "🚀 Cosmic Forge RMS",
-            style = MaterialTheme.typography.displayMedium,
-            fontWeight = FontWeight.Bold
+            text = "Select User",
+            style = MaterialTheme.typography.headlineMedium
         )
         
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        Text(
-            text = "Select Your Profile",
-            style = MaterialTheme.typography.titleLarge
-        )
-        
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(24.dp))
         
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
-            contentPadding = PaddingValues(16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(users) { user ->
+            items(users.size) { index ->
+                val user = users[index]
                 UserCard(
                     user = user,
-                    onClick = { onUserSelected(user) }
+                    onClick = { onUserSelected(user) },
+                    isMonthlyWinner = winnerId == user.id
                 )
             }
         }
@@ -131,44 +124,66 @@ private fun UserSelectionScreen(
 @Composable
 private fun UserCard(
     user: UserEntity,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    isMonthlyWinner: Boolean = false
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(180.dp)
             .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(16.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = getRoleIcon(user.roleLevel),
-                contentDescription = null,
-                modifier = Modifier.size(64.dp),
-                tint = getRoleColor(user.roleLevel)
-            )
+        Box {
+            Row(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // User icon with role color
+                Icon(
+                    imageVector = getRoleIcon(user.roleLevel),
+                    contentDescription = null,
+                    modifier = Modifier.size(48.dp),
+                    tint = getRoleColor(user.roleLevel)
+                )
+                
+                Spacer(modifier = Modifier.width(16.dp))
+                
+                Column {
+                    Text(
+                        text = user.userName,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = when(user.roleLevel) {
+                            UserEntity.ROLE_ARCHITECT -> "Architect"
+                            UserEntity.ROLE_OWNER -> "Owner"
+                            UserEntity.ROLE_MANAGER -> "Manager"
+                            UserEntity.ROLE_WAITER -> "Waiter"
+                            else -> "Staff"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = getRoleColor(user.roleLevel)
+                    )
+                }
+            }
             
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Text(
-                text = user.userName,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
-            )
-            
-            Text(
-                text = user.getRoleName(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = getRoleColor(user.roleLevel)
-            )
+            // Gold Star Badge for Monthly Winner
+            if (isMonthlyWinner) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.EmojiEvents,
+                        contentDescription = "Top Performer",
+                        modifier = Modifier.size(32.dp),
+                        tint = Color(0xFFFFD700) // Gold color
+                    )
+                }
+            }
         }
     }
 }
